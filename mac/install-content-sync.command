@@ -1,24 +1,25 @@
 #!/bin/bash
 # ─────────────────────────────────────────────────────────────────────────────
 #  Planner Content Sync for your MacBook
-#  Watches ~/Content/<account> folders and adds every NEW video, image or
+#  Watches <your content folder>/<account> folders (default ~/Content) and adds every NEW video, image or
 #  folder of images to the Queue on your planner website.
 #  • Your files never leave your Mac (only the NAME is sent).
 #  • Deleting a file later does NOT remove it from the sheet.
 #  Run:  bash ~/Downloads/install-content-sync.command
+#  Use another folder:  bash ~/Downloads/install-content-sync.command "/path/to/folder"
 #  Uninstall:  bash ~/Downloads/install-content-sync.command --uninstall
 # ─────────────────────────────────────────────────────────────────────────────
 set -e
 SITE_DEFAULT="https://planner-sable-five.vercel.app"
 APP_DIR="$HOME/Library/Application Support/PlannerSync"
 PLIST="$HOME/Library/LaunchAgents/com.planner.contentsync.plist"
-ROOT="$HOME/Content"
+ROOT_DEFAULT="$HOME/Content"
 ACCOUNTS=("Life with C - Instagram" "Life with C - TikTok" "Life with C - YouTube" "Ane Manda - Instagram" "Ane Manda - Facebook" "Ane Manda - TikTok" "Ane Manda - YouTube")
 
 if [ "$1" = "--uninstall" ]; then
   launchctl unload "$PLIST" 2>/dev/null || true
   rm -f "$PLIST"; rm -rf "$APP_DIR"
-  echo "✅ Content Sync removed. Your ~/Content folder and your sheet were not touched."
+  echo "✅ Content Sync removed. Your content folder and your sheet were not touched."
   exit 0
 fi
 
@@ -28,13 +29,19 @@ echo ""
 read -r -p "Website address [$SITE_DEFAULT]: " SITE
 SITE="${SITE:-$SITE_DEFAULT}"; SITE="${SITE%/}"
 case "$SITE" in http*) ;; *) SITE="https://$SITE" ;; esac
+ROOT="$1"
+if [ -z "$ROOT" ]; then
+  read -r -p "Content folder [$ROOT_DEFAULT]: " ROOT
+  ROOT="${ROOT:-$ROOT_DEFAULT}"
+fi
+ROOT="${ROOT/#\~/$HOME}"; ROOT="${ROOT%/}"
 echo "Paste your CRON_SECRET (the same value you put in Vercel). It won't show while you paste:"
 read -r -s KEY; echo ""
 [ -z "$KEY" ] && { echo "❌ No key entered. Run me again."; exit 1; }
 
 mkdir -p "$APP_DIR" "$HOME/Library/LaunchAgents" "$HOME/Library/Logs"
 for a in "${ACCOUNTS[@]}"; do mkdir -p "$ROOT/$a"; done
-printf 'SITE=%q\nKEY=%q\n' "$SITE" "$KEY" > "$APP_DIR/config"
+printf 'SITE=%q\nKEY=%q\nROOT=%q\n' "$SITE" "$KEY" "$ROOT" > "$APP_DIR/config"
 chmod 600 "$APP_DIR/config"
 touch "$APP_DIR/seen.txt"
 
@@ -43,7 +50,7 @@ cat > "$APP_DIR/sync.sh" <<'SYNC'
 #!/bin/bash
 APP_DIR="$HOME/Library/Application Support/PlannerSync"
 ROOT="$HOME/Content"
-. "$APP_DIR/config"
+. "$APP_DIR/config"   # sets SITE, KEY and (if you picked another folder) ROOT
 SEEN="$APP_DIR/seen.txt"
 touch "$SEEN"
 log() { echo "$(date '+%Y-%m-%d %H:%M') $*"; }
@@ -62,6 +69,11 @@ send() { # channel platform name type note
 recent() { # true if anything inside was changed in the last minute (still copying)
   [ -n "$(find "$1" -mmin -1 2>/dev/null | head -n 1)" ]
 }
+
+if ! ls "$ROOT" >/dev/null 2>&1; then
+  log "⚠️  macOS won't let the helper look inside $ROOT. Open System Settings → Privacy & Security → Full Disk Access, press +, press ⌘⇧G, type /bin/bash, press Open, and switch it on."
+  exit 0
+fi
 
 for acc in "$ROOT"/*/; do
   acc="${acc%/}"; folder="$(basename "$acc")"
