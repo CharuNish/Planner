@@ -120,6 +120,55 @@ It opens full-screen like a normal app.
 
 ---
 
+---
+
+# Stage 2: Updates, Opportunities, Weight, Habits, Mini goals
+
+## 6. Create your Life sheet
+
+Upload **templates/Life-template.xlsx** the same way as before (**File → Save as Google Sheets**, then **Share** the new copy with the robot's email as **Editor**). Copy its ID.
+
+| Tab | Columns | Notes |
+|---|---|---|
+| **Weight** | Date · Weight (kg) · Notes | Add a row whenever you weigh yourself (or use the button on the Weight tab). |
+| **Habits** | Date · Sleep (h) · Water (glasses) · Gym · Notes | Gym is `Yes` or `No`. The Habits tab has a quick check-in form that fills this for you. |
+| **Goals** | Goal · Category · Image URL · Target Date · Status · Progress (%) · Cost · Notes | Category: `Career`, `Buy`, `Travel`, `Learn`, `Health` or `Other`. Image URL is optional: leave it blank and a matching photo is found automatically, or paste any image link (right-click an image online → **Copy image address**). |
+| **RecipeLog** | Date · Recipe · Link · Rating · Comment | Filled in when you tick **I made this** on a recipe. |
+| **Opportunities** | Title · Type · Organisation · Deadline · Link · Status · Notes | Filled in when you **Save** an opportunity. Update Status as you go (Interested → Applying → Applied → Interview → Offer). |
+
+## 7. Get a free Gemini key (for summaries and the opportunity search)
+
+1. Go to [aistudio.google.com/apikey](https://aistudio.google.com/apikey) and sign in.
+2. Click **Create API key** (pick your `planner` project if asked). Copy the key.
+
+It's free; you don't need to add a card. The planner uses only a handful of requests a day.
+
+## 8. Get a free YouTube key (for the video picks)
+
+1. Go to the [YouTube Data API page](https://console.cloud.google.com/apis/library/youtube.googleapis.com) (make sure your `planner` project is selected at the top) → **Enable**.
+2. Go to **APIs & Services → [Credentials](https://console.cloud.google.com/apis/credentials)** → **Create credentials → API key**. Copy it.
+3. (Recommended) Click the key → under **API restrictions** choose **Restrict key** → tick **YouTube Data API v3** → Save.
+
+## 9. Add the new settings in Vercel
+
+**Settings → Environment Variables**, then **Redeploy**:
+
+| Name | Value |
+|---|---|
+| `LIFE_SHEET_ID` | ID of your Life sheet |
+| `GEMINI_API_KEY` | your Gemini key |
+| `YOUTUBE_API_KEY` | your YouTube key |
+| `WEIGHT_GOAL_KG` | your goal weight, e.g. `65` (optional) |
+| `HEIGHT_CM` | your height, e.g. `160`, to show BMI (optional) |
+| `SLEEP_TARGET_HOURS` | e.g. `7` (optional, default 7) |
+| `WATER_TARGET_GLASSES` | e.g. `8` (optional, default 8) |
+
+The Updates and Opportunities tabs refresh by themselves at **6:00 AM Sri Lanka time**. The first time you open them before that, they may take up to a minute to load.
+
+**Want different topics?** Edit `src/lib/interests.ts` in GitHub (pencil icon ✏️ → change the words → **Commit changes**). Vercel updates the site automatically.
+
+---
+
 ## Running it on your laptop (optional, for tinkering)
 
 1. Install [Node.js](https://nodejs.org) (the LTS version).

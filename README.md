@@ -4,7 +4,9 @@ A private, free, daily-updated personal planner dashboard.
 
 **Stage 1 (this version):** password login, installable phone app, Home "Today" summary, Finance tracker, Calendar, Studies & Research, and optional morning Telegram reminders.
 
-**Coming next:** Updates (GitHub trending, papers, Medium, YouTube), Weight & recipes, Mini goals, Opportunities, Habits, Content Creation stats.
+**Stage 2:** Updates (GitHub trending, papers, Medium, YouTube), Opportunities (jobs, PhD, MSc, schools), Weight & real recipes, Habits, Mini goals.
+
+**Coming next:** a techy 3D redesign, then Content Creation stats.
 
 👉 **Start with [SETUP.md](SETUP.md).** Sheet templates are in [`templates/`](templates/).
 

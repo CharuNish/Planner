@@ -1,7 +1,7 @@
 import { EventRow } from "@/components/event-list";
 import { AddEventForm } from "@/components/forms";
 import { DemoBanner, Empty, PageHeader, Section } from "@/components/ui";
-import { CATEGORIES, CATEGORY_STYLE, loadEvents, type CalEvent } from "@/lib/calendar";
+import { CATEGORIES, CATEGORY_DOT, CATEGORY_STYLE, loadEvents, type CalEvent } from "@/lib/calendar";
 import { addDays, prettyDate, relativeDays, daysBetween, todayISO } from "@/lib/dates";
 import { loadFinance, upcomingBills } from "@/lib/finance";
 import { loadStudies } from "@/lib/studies";
@@ -62,7 +62,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
             return (
               <a key={d} href={evs.length ? `#d-${d}` : undefined} className={`rounded-lg p-1.5 min-h-14 text-left ${d === today ? "ring-2 ring-accent" : ""} ${past ? "opacity-40" : ""}`} style={{ background: "var(--bg)" }}>
                 <div className="text-xs font-semibold">{Number(d.slice(8, 10))}</div>
-                <div className="flex flex-wrap gap-0.5 mt-1">{evs.slice(0, 4).map((e) => <span key={e.id} title={e.title} className={`w-2 h-2 rounded-full ${(CATEGORY_STYLE[e.category] || "").split(" ")[0]}`} style={{ outline: "1px solid var(--border)" }} />)}</div>
+                <div className="flex flex-wrap gap-0.5 mt-1">{evs.slice(0, 4).map((e) => <span key={e.id} title={e.title} className="w-2 h-2 rounded-full" style={{ background: CATEGORY_DOT[e.category] || CATEGORY_DOT.Other }} />)}</div>
                 {evs.length > 0 && <div className="hidden md:block text-[10px] muted truncate mt-0.5">{evs[0].title}</div>}
               </a>
             );

@@ -59,3 +59,28 @@ export function StudyHoursChart({ data }: { data: { label: string; hours: number
     </ResponsiveContainer>
   );
 }
+
+export function WeightChart({ data }: { data: { label: string; kg: number; avg: number; goal: number | null }[] }) {
+  const vals = data.flatMap((d) => [d.kg, d.goal ?? d.kg]);
+  const min = Math.floor(Math.min(...vals) - 1), max = Math.ceil(Math.max(...vals) + 1);
+  return (
+    <ResponsiveContainer width="100%" height={260}>
+      <ComposedChart data={data} margin={{ left: -15, right: 8, top: 8 }}>
+        <defs>
+          <linearGradient id="wg" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="var(--series-1)" stopOpacity={0.25} />
+            <stop offset="100%" stopColor="var(--series-1)" stopOpacity={0.02} />
+          </linearGradient>
+        </defs>
+        <CartesianGrid stroke="var(--grid)" vertical={false} />
+        <XAxis dataKey="label" {...axis} minTickGap={24} />
+        <YAxis {...axis} domain={[min, max]} />
+        <Tooltip contentStyle={tooltipStyle} formatter={(v, name) => [`${v} kg`, name]} />
+        <Legend wrapperStyle={{ fontSize: 12 }} />
+        {data[0]?.goal ? <Line isAnimationActive={false} name="Goal" dataKey="goal" stroke="var(--series-3)" strokeDasharray="5 4" strokeWidth={1.5} dot={false} /> : null}
+        <Area isAnimationActive={false} name="Weigh-ins" dataKey="kg" stroke="var(--series-1)" strokeOpacity={0.35} strokeWidth={1.5} fill="url(#wg)" dot={{ r: 2.5, fill: "var(--series-1)", strokeWidth: 0 }} />
+        <Line isAnimationActive={false} name="Trend" type="monotone" dataKey="avg" stroke="var(--series-1)" strokeWidth={2.5} dot={false} />
+      </ComposedChart>
+    </ResponsiveContainer>
+  );
+}

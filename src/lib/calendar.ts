@@ -22,6 +22,11 @@ export const CATEGORY_STYLE: Record<string, string> = {
   Other: "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200",
 };
 
+export const CATEGORY_DOT: Record<string, string> = {
+  Meeting: "#0ea5e9", Lecture: "#6366f1", Class: "#6366f1", Exam: "#f43f5e", Deadline: "#f97316", Gym: "#10b981",
+  Bill: "#f59e0b", Subscription: "#eab308", Payment: "#f59e0b", Function: "#d946ef", Event: "#8b5cf6", Other: "#a1a1aa",
+};
+
 /** Guesses a category. Tip: start an event title with "[Gym]" or "Exam:" to force it. */
 export function categorise(title: string, description = ""): string {
   const tag = title.match(/^\s*\[([^\]]+)\]/)?.[1] || title.match(/^\s*(\w+)\s*:/)?.[1];
