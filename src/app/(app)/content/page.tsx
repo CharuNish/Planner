@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { FollowerGrowthChart, PostsPerWeekChart } from "@/components/charts";
-import { CaptionMaker, FollowersForm, PostedButton, StatsForm } from "@/components/content-forms";
+import { AddToQueueForm, CaptionMaker, FollowersForm, PostedButton, SkipButton, StatsForm } from "@/components/content-forms";
 import { SafeImg } from "@/components/img";
 import { FeedError } from "@/components/retry";
 import { DemoBanner, Empty, PageHeader, Section, Stat } from "@/components/ui";
@@ -36,6 +36,7 @@ function Bars({ rows, label }: { rows: { key: string; avgViews: number; posts: n
 }
 
 function Thumb({ item }: { item: QueueItem }) {
+  if (!item.link) return <div className="w-12 h-12 rounded-lg shrink-0 grid place-items-center text-xl" style={{ background: `color-mix(in srgb, ${PLATFORM_COLOR[item.platform] || "#8b5cf6"} 18%, transparent)` }}>🎬</div>;
   return <SafeImg src={item.hasThumb ? `/api/thumb/${item.fileId}` : ""} alt={item.name} emoji={item.mimeType.startsWith("image") ? "🖼️" : "🎬"} className="w-20 h-28 rounded-lg shrink-0" />;
 }
 
@@ -88,10 +89,9 @@ export default async function ContentPage() {
 
   return (
     <div className="space-y-5">
-      <PageHeader title="🎬 Content" subtitle="Your posting queue from Google Drive, captions written for you, and how your posts are doing. You upload; I remind you every morning." />
-      {files.demo && <DemoBanner what="Content folder in Google Drive" />}
-      {!q.ok && <p className="text-sm text-bad">Couldn't read your Content folder: {q.error}</p>}
-      {!files.demo && sheet.demo && <p className="text-sm text-warn">Connect a sheet (CONTENT_SHEET_ID or LIFE_SHEET_ID) so I can remember what you've posted.</p>}
+      <PageHeader title="🎬 Content" subtitle="What you have left to post on each account, captions written for you, and how your posts are doing. You upload; I remind you every morning." />
+      {files.demo && <DemoBanner what="Content tabs in your Life sheet" />}
+      {!q.ok && <p className="text-sm text-bad">Couldn't read your queue: {q.error}</p>}
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <Stat label="📥 Left to post" value={<CountUp value={queue.length} />} hint={`across ${new Set(queue.map((x) => x.channel + x.platform)).size} accounts`} tone={queue.length ? undefined : "good"} />
@@ -101,9 +101,8 @@ export default async function ContentPage() {
       </div>
 
       <Section title="📥 Left to post" action={<span className="text-xs muted">Oldest first, per account</span>}>
-        {!files.accounts.length ? (
-          <Empty>No account folders found yet. In your Content folder, make sub-folders like <b>Life with C - Instagram</b> or <b>Ane Manda - TikTok</b> and drop your videos in.</Empty>
-        ) : (
+        <div className="mb-5"><AddToQueueForm accounts={files.accounts} /></div>
+        {(
           <div className="space-y-6">
             {files.accounts.map((acc) => {
               const items = queue.filter((x) => x.channel === acc.channel && x.platform === acc.platform);
@@ -114,7 +113,7 @@ export default async function ContentPage() {
                     <h3 className="font-semibold flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full" style={{ background: PLATFORM_COLOR[acc.platform], boxShadow: `0 0 10px ${PLATFORM_COLOR[acc.platform]}` }} />{PLATFORM_ICON[acc.platform]} {acc.channel} · {acc.platform}</h3>
                     <span className={`text-xs ${since !== null && since > 7 ? "text-warn" : "muted"}`}>{items.length} left · {since === null ? "nothing posted yet" : since === 0 ? "posted today" : `last post ${since} day${since === 1 ? "" : "s"} ago`}</span>
                   </div>
-                  {!items.length ? <Empty>All caught up here 🎉 Add more videos to the “{acc.folderName}” folder.</Empty> : (
+                  {!items.length ? <Empty>{since === null ? "Nothing queued yet." : "All caught up here 🎉"} Add video names with the button above.</Empty> : (
                     <div className="space-y-3">
                       {items.map((item, i) => (
                         <details key={item.fileId} className="rounded-xl p-3" data-tile="" open={i === 0}>
@@ -129,7 +128,7 @@ export default async function ContentPage() {
                           </summary>
                           <div className="mt-3 space-y-3">
                             <CaptionMaker item={item} saved={sheet.captions.get(item.fileId)} />
-                            <PostedButton item={item} caption={sheet.captions.get(item.fileId)} />
+                            <div className="flex flex-wrap items-center justify-between gap-2"><PostedButton item={item} caption={sheet.captions.get(item.fileId)} /><SkipButton row={item.row} /></div>
                           </div>
                         </details>
                       ))}

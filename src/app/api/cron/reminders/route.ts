@@ -6,7 +6,7 @@ import { analyseFinance, fmt, loadFinance, upcomingBills } from "@/lib/finance";
 import { analyseStudies, loadStudies } from "@/lib/studies";
 import { getOpportunities } from "@/lib/opportunities";
 import { buildQueue, lastPosted, loadContentSheet, loadQueueFiles } from "@/lib/content";
-import { contentFolderIsDemo } from "@/lib/config";
+import { contentFolderIsDemo, contentIsDemo } from "@/lib/config";
 
 export const maxDuration = 60;
 
@@ -43,7 +43,7 @@ export async function GET(req: Request) {
     if (a.priorities[0]) lines.push("", `⭐ Study first: ${a.priorities[0].task}`);
   } catch { /* studies not connected */ }
 
-  if (!contentFolderIsDemo()) {
+  if (!contentIsDemo() || !contentFolderIsDemo()) {
     try {
       const [q, sheet] = await Promise.all([loadQueueFiles(), loadContentSheet()]);
       const queue = buildQueue(q.files, sheet.posts);
@@ -53,7 +53,7 @@ export async function GET(req: Request) {
         const left = queue.filter((x) => x.channel === acc.channel && x.platform === acc.platform).length;
         const since = lastPosted(sheet.posts, acc.channel, acc.platform);
         if (next) out.push(`• ${acc.channel} ${acc.platform}: "${sheet.captions.get(next.fileId)?.title || next.name}"${since === null ? "" : since === 0 ? " (already posted today)" : ` (last post ${since}d ago)`}${left > 1 ? ` +${left - 1} more` : ""}`);
-        else if (since !== null && since >= 7) out.push(`• ${acc.channel} ${acc.platform}: queue empty and no post for ${since} days. Add a video to its folder!`);
+        else if (since !== null && since >= 7) out.push(`• ${acc.channel} ${acc.platform}: nothing queued and no post for ${since} days. Add a video!`);
       }
       if (out.length) lines.push("", `🎬 To post today (${queue.length} left in total):`, ...out);
       const stats = sheet.posts.filter((p) => !p.views && daysBetween(p.date, today) >= 2 && daysBetween(p.date, today) <= 7 && p.platform !== "YouTube");

@@ -17,7 +17,7 @@ export const POST_TYPES = ["Reel", "Short", "Video", "Post", "Carousel", "Story"
 export const PLATFORM_COLOR: Record<string, string> = { Instagram: "#ec4899", TikTok: "#22d3ee", YouTube: "#f43f5e", Facebook: "#3b82f6" };
 export const PLATFORM_ICON: Record<string, string> = { Instagram: "📸", TikTok: "🎵", YouTube: "▶️", Facebook: "📘" };
 
-export type QueueItem = { fileId: string; name: string; channel: string; platform: string; added: string; mimeType: string; size: number; seconds: number; description: string; link: string; hasThumb: boolean };
+export type QueueItem = { row?: number; fileId: string; name: string; channel: string; platform: string; added: string; mimeType: string; size: number; seconds: number; description: string; link: string; hasThumb: boolean };
 export type Account = { channel: string; platform: string; folderId: string; folderName: string };
 export type Post = {
   row: number; date: string; channel: string; platform: string; title: string; type: string; link: string;
@@ -59,8 +59,20 @@ function toItem(f: DriveFile, a: Account): QueueItem {
   return { fileId: f.id, name: f.name, channel: a.channel, platform: a.platform, added: f.createdTime.slice(0, 10), mimeType: f.mimeType, size: Number(f.size || 0), seconds: Math.round(Number(f.videoMediaMetadata?.durationMillis || 0) / 1000), description: f.description || "", link: f.webViewLink || "", hasThumb: Boolean(f.thumbnailLink) };
 }
 
+// Your accounts. A Drive folder or a Queue row for any other account adds it automatically.
+export const DEFAULT_ACCOUNTS: [string, string][] = [
+  ["Life with C", "Instagram"], ["Life with C", "TikTok"], ["Life with C", "YouTube"],
+  ["Ane Manda", "Instagram"], ["Ane Manda", "Facebook"], ["Ane Manda", "TikTok"], ["Ane Manda", "YouTube"],
+];
+/** Stable id for a video listed by name in the Queue tab (used to link captions and posts to it). */
+export const queueId = (name: string, channel: string, platform: string) => `q:${channel}|${platform}|${name}`.slice(0, 200);
+
+/**
+ * Videos waiting to be posted. Main source: the "Queue" tab (you just type the video's name; the file stays on
+ * your phone/laptop). Optional: a Google Drive folder per account (CONTENT_FOLDER_ID).
+ */
 export async function loadQueueFiles(): Promise<{ demo: boolean; accounts: Account[]; files: QueueItem[] }> {
-  if (contentFolderIsDemo()) {
+  if (contentIsDemo() && contentFolderIsDemo()) {
     const names: [string, string, string][] = [
       ["Life with C", "Instagram", "rice cooker biryani.mp4"], ["Life with C", "Instagram", "morning routine colombo.mp4"], ["Life with C", "TikTok", "what I eat in a day.mp4"],
       ["Life with C", "YouTube", "weekend market vlog.mp4"], ["Ane Manda", "TikTok", "trying viral snacks.mp4"], ["Ane Manda", "Facebook", "kottu at home.mp4"], ["Ane Manda", "Instagram", "rainy day.mp4"],
@@ -68,9 +80,27 @@ export async function loadQueueFiles(): Promise<{ demo: boolean; accounts: Accou
     const accounts = [...new Set(names.map((n) => `${n[0]}|${n[1]}`))].map((k) => { const [channel, platform] = k.split("|"); return { channel, platform, folderId: "", folderName: `${channel} - ${platform}` }; });
     return { demo: true, accounts, files: names.map(([channel, platform, name], i) => ({ fileId: `demo${i}`, name, channel, platform, added: addDays(todayISO(), -10 + i), mimeType: "video/mp4", size: 0, seconds: 20 + i * 7, description: "", link: "", hasThumb: false })) };
   }
-  const accounts = await findAccounts();
-  const lists = await Promise.all(accounts.map(async (a) => (await driveList(a.folderId)).filter(isMedia).map((f) => toItem(f, a))));
-  return { demo: false, accounts, files: lists.flat() };
+  const accounts: Account[] = DEFAULT_ACCOUNTS.map(([channel, platform]) => ({ channel, platform, folderId: "", folderName: "" }));
+  const files: QueueItem[] = [];
+  if (!contentIsDemo()) {
+    for (const r of await sheetTab("Queue", true)) {
+      const name = str(r["video"] ?? r["name"] ?? r["file"]);
+      const status = str(r["status"]).toLowerCase();
+      if (!name || /post|skip|done/.test(status)) continue;
+      const channel = pick(CHANNELS, str(r["channel"]), "Life with C"), platform = pick(PLATFORMS, str(r["platform"]), "Instagram");
+      const type = str(r["type"]);
+      const isImages = /carousel|image|photo|post/i.test(type);
+      files.push({ row: Number(r["__row"]), fileId: queueId(name, channel, platform), name, channel, platform, added: parseDate(r["added"]) || todayISO(), mimeType: isImages ? "image/jpeg" : "video/mp4", size: 0, seconds: 0, description: [isImages ? `(${type})` : "", str(r["note"] ?? r["notes"])].filter(Boolean).join(" "), link: "", hasThumb: false });
+    }
+  }
+  if (!contentFolderIsDemo()) {
+    const driveAccounts = await findAccounts();
+    const lists = await Promise.all(driveAccounts.map(async (a) => (await driveList(a.folderId)).filter(isMedia).map((f) => toItem(f, a))));
+    files.push(...lists.flat());
+    for (const d of driveAccounts) { const ex = accounts.find((x) => x.channel === d.channel && x.platform === d.platform); if (ex) Object.assign(ex, { folderId: d.folderId, folderName: d.folderName }); else accounts.push(d); }
+  }
+  for (const f of files) if (!accounts.some((x) => x.channel === f.channel && x.platform === f.platform)) accounts.push({ channel: f.channel, platform: f.platform, folderId: "", folderName: "" });
+  return { demo: false, accounts, files };
 }
 
 // ───── Sheet data ─────

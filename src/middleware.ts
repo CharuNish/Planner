@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { SESSION_COOKIE, verifySession } from "@/lib/auth";
 
 // Every page needs you to be logged in, except the login page, the phone-app files and the cron job.
-const PUBLIC = ["/login", "/manifest.webmanifest", "/sw.js", "/icons", "/api/cron", "/favicon.ico"];
+const PUBLIC = ["/login", "/manifest.webmanifest", "/sw.js", "/icons", "/api/cron", "/api/queue", "/favicon.ico"];
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;

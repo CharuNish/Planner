@@ -171,32 +171,46 @@ The Updates and Opportunities tabs refresh by themselves at **6:00 AM Sri Lanka 
 
 # Stage 4: Content (posting queue, captions, ideas)
 
-You upload to Instagram / TikTok / YouTube / Facebook yourself. The site keeps your queue, writes captions and hashtags, tracks how posts do, and reminds you on Telegram every morning.
+You upload to Instagram / TikTok / YouTube / Facebook yourself, and your videos never leave your phone/laptop. The site keeps a list of what's left to post, writes captions and hashtags, tracks how posts do, and reminds you on Telegram every morning.
 
-## 10. Make your Content folder in Google Drive
-
-1. In [Google Drive](https://drive.google.com), make a folder called **Content**.
-2. Inside it, make one folder **per account**. The name must include the channel and the app, for example:
-   - `Life with C - Instagram`, `Life with C - TikTok`, `Life with C - YouTube`
-   - `Ane Manda - Instagram`, `Ane Manda - Facebook`, `Ane Manda - TikTok`, `Ane Manda - YouTube`
-3. Drop your finished videos into the right folder. They queue **oldest first**. Videos under about 12 MB are "watched" by the AI so captions match what's in them; bigger ones use the file name and the note you type.
-4. Right-click the **Content** folder → **Share** → paste the robot's email (same one you used for the sheets) → **Viewer** → untick "Notify" → **Share**.
-5. Turn on the Drive API: open the [Google Drive API page](https://console.cloud.google.com/apis/library/drive.googleapis.com) (your `planner` project selected at the top) → **Enable**.
-6. Copy the folder's ID: open the Content folder; the address looks like `drive.google.com/drive/folders/`**`1AbC...xyz`**. The bold part is the ID (pasting the whole link also works).
-
-## 11. Add the Content tabs to your Life sheet
+## 10. Add the Content tabs to your Life sheet
 
 1. Download [`templates/Content-template.xlsx`](templates/Content-template.xlsx).
-2. Open your **Life** Google Sheet → **File → Import → Upload** → pick the file → **Insert new sheet(s)** → **Import data**. You'll get 4 new tabs: **Posts**, **Captions**, **Followers**, **Channels**.
+2. Open your **Life** Google Sheet → **File → Import → Upload** → pick the file → **Insert new sheet(s)** → **Import data**. You'll get 5 new tabs: **Queue**, **Posts**, **Captions**, **Followers**, **Channels**. (Delete the example row in Queue.)
 3. In the **Channels** tab, describe each channel in a sentence (what it's about, language, who watches). The AI uses this for captions and ideas.
 
-You never need to type in Posts or Captions yourself: the site fills them when you press **✨ Write caption** and **✓ I posted this**. You can add views/likes from the site too.
+That's it. Your videos stay on your phone or laptop. On the Content tab press **+ Add videos to queue**, type the video names (one per line), tick the accounts, and add a short note about what's in it (the note makes the captions much better). You can also type straight into the Queue tab.
 
-## 12. Add the new settings in Vercel
+You never need to type in Posts or Captions yourself: the site fills them when you press **✨ Write caption** and **✓ I posted this**.
+
+## 11. Auto-add new videos from your MacBook
+
+A tiny helper runs quietly on your Mac. Whenever you put a **video**, an **image**, or a **folder of images** (for a carousel post) into an account folder, its **name** is added to your queue within a few minutes. The files themselves never leave your Mac, and deleting them later does **not** remove them from the sheet.
+
+1. Make sure step 10 is done and the site is redeployed with the latest version.
+2. On your MacBook, download [`mac/install-content-sync.command`](mac/install-content-sync.command) (it lands in **Downloads**).
+3. Open **Terminal** (press ⌘ + Space, type *Terminal*, press Enter), paste this and press Enter:
+   ```
+   bash ~/Downloads/install-content-sync.command
+   ```
+4. Press Enter to keep the website address, then paste your **CRON_SECRET** (the same value as in Vercel; it stays invisible while you paste) and press Enter.
+5. It says **✅ All set!** and opens your new **Content** folder (in your home folder) with one folder per account: `Life with C - Instagram`, `Ane Manda - TikTok`, etc. Drag it to the Finder sidebar for easy access.
+
+**Tips**
+- A carousel = a folder of images inside the account folder. The folder's name is the post name.
+- Add a `note.txt` inside a carousel folder (or a text file with the same name as a video, e.g. `kottu night.txt`) saying what it's about. It goes into the queue and makes the captions much better.
+- Same video for several accounts? Put a copy in each account folder, or add it once on the website and tick all the accounts.
+- Something not showing up? Open Terminal and run `tail ~/Library/Logs/planner-sync.log` to see what happened.
+- To remove the helper: `bash ~/Downloads/install-content-sync.command --uninstall`.
+
+### (Optional) Google Drive folders instead
+
+The website can also read a Google Drive folder with one sub-folder per account (e.g. `Life with C - Instagram`), and then the AI can watch short videos. Share the folder with the robot email (Viewer), enable the [Google Drive API](https://console.cloud.google.com/apis/library/drive.googleapis.com), and add `CONTENT_FOLDER_ID` (the folder link) in Vercel. Skip this if you don't want to upload videos.
+
+## 12. (Optional) Automatic YouTube numbers
 
 | Name | Value |
 |---|---|
-| `CONTENT_FOLDER_ID` | the Content folder ID (or its link) |
 | `YOUTUBE_CHANNELS` | optional, for automatic YouTube subscribers and views, e.g. `Life with C=@yourhandle; Ane Manda=@otherhandle` |
 
 Then **Redeploy**. Instagram, TikTok and Facebook don't give free stats, so log followers on the Content tab once a week (**+ Log follower counts**) and add views/likes on each post when you have a minute. The morning Telegram message tells you what's next in each queue and nudges you when stats are missing.
