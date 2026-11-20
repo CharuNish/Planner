@@ -25,7 +25,6 @@ export const config = {
   },
   cronSecret: process.env.CRON_SECRET || "",
   geminiKey: process.env.GEMINI_API_KEY || "",
-  geminiModel: process.env.GEMINI_MODEL || "gemini-2.5-flash",
   youtubeKey: process.env.YOUTUBE_API_KEY || "",
   weightGoalKg: Number(process.env.WEIGHT_GOAL_KG || 0),
   heightCm: Number(process.env.HEIGHT_CM || 0),

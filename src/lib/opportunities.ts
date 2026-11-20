@@ -74,4 +74,4 @@ async function allOpportunities() {
   return { items: unique, errors, refreshed: new Date().toISOString() };
 }
 
-export const getOpportunities = daily("opportunities-v3", allOpportunities);
+export const getOpportunities = daily("opportunities-v4", allOpportunities);

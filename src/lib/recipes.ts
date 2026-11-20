@@ -87,7 +87,7 @@ async function pickRecipes(seed: string, count = 9): Promise<Recipe[]> {
   return good.slice(0, count).map((m) => ({ ...m, instructions: undefined } as unknown as Recipe));
 }
 
-const cachedPicks = unstable_cache(async (seed: string) => pickRecipes(seed), ["recipes", "v1"], { revalidate: 60 * 60 * 24 * 8 });
+const cachedPicks = unstable_cache(async (seed: string) => pickRecipes(seed), ["recipes", "v2"], { revalidate: 60 * 60 * 24 * 8 });
 export const getRecipes = (seed: string) => cachedPicks(seed);
 
 export async function searchRecipes(q: string): Promise<Recipe[]> {
