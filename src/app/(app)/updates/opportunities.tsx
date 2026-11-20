@@ -15,6 +15,10 @@ const QUICK = [
   { label: "LinkedIn: Research Assistant", url: li('"research assistant" ("computer vision" OR "neuroscience" OR "psychology" OR "explainable AI")') },
   { label: "LinkedIn: PhD positions", url: li('"PhD" ("computer vision" OR "explainable AI" OR "neuroscience")') },
   { label: "LinkedIn: MSc positions", url: li('("MSc" OR "master") scholarship ("computer vision" OR "AI" OR "neuroscience")') },
+  { label: "Google: summer schools (CV / XAI / neuro)", url: `https://www.google.com/search?q=${encodeURIComponent('"summer school" 2027 ("computer vision" OR "explainable AI" OR "neuroscience") application deadline')}` },
+  { label: "Google: winter schools", url: `https://www.google.com/search?q=${encodeURIComponent('"winter school" ("computer vision" OR "explainable AI" OR "neuroscience" OR "machine learning") application')}` },
+  { label: "FindAPhD: computer vision", url: "https://www.findaphd.com/phds/?Keywords=computer+vision" },
+  { label: "EURAXESS jobs", url: "https://euraxess.ec.europa.eu/jobs/search?keywords=computer%20vision" },
 ];
 // Google searches limited to each institution's own website, so they always work even if a careers page moves.
 const site = (domain: string) => `https://www.google.com/search?q=${encodeURIComponent(`("research engineer" OR "research assistant" OR "AI engineer") site:${domain}`)}&tbs=qdr:m`;
@@ -34,8 +38,7 @@ async function Found({ type }: { type: string }) {
   if (!items.length) return <Empty>Nothing in this category today. Check back tomorrow!</Empty>;
   return (
     <div className="space-y-3">
-      {!r.data.staleFrom && r.data.errors.length > 0 && <p className="text-sm rounded-xl px-4 py-2 soft">💤 Today&apos;s web search for PhDs, MSc and schools hit Gemini&apos;s free limit, so only remote jobs are showing. It tries again tomorrow morning.</p>}
-      {r.data.staleFrom && <p className="text-sm rounded-xl px-4 py-2 soft">💤 Gemini&apos;s free search limit ran out today, so you&apos;re seeing the list from {prettyDate(r.data.staleFrom)}. Fresh results tomorrow morning.</p>}
+      {r.data.staleFrom && <p className="text-sm rounded-xl px-4 py-2 soft">💤 Includes your last web-search list from {prettyDate(r.data.staleFrom)} (still-open ones only).</p>}
       {items.map((o, i) => {
         const days = o.deadline ? daysBetween(today, o.deadline) : null;
         return (
@@ -57,7 +60,8 @@ async function Found({ type }: { type: string }) {
           </article>
         );
       })}
-      <p className="text-xs muted">{r.data.staleFrom ? <>Today&apos;s search hit Gemini&apos;s free limit, so this is your list from {prettyDate(r.data.staleFrom)} (still-open ones only). It tries again tomorrow morning.</> : <>Found {prettyDate(r.data.refreshed.slice(0, 10))}.</>} AI search results can be out of date, so always check the official page before applying.</p>
+      <p className="text-xs muted">Found {prettyDate(r.data.refreshed.slice(0, 10))} from free job feeds{r.data.sourceStatus?.some((x) => x.name.startsWith("Gemini") && x.found) ? " and a web search" : ""}. Always check the official page before applying.</p>
+      {r.data.sourceStatus && <details className="text-xs muted"><summary className="cursor-pointer">Sources checked today</summary><ul className="mt-1 space-y-0.5">{r.data.sourceStatus.map((x) => <li key={x.name}>{x.error ? "✗" : "✓"} {x.name}: {x.error ? x.error : `${x.found} found`}</li>)}</ul></details>}
     </div>
   );
 }
