@@ -8,17 +8,27 @@ import { loadSavedOpps } from "@/lib/life";
 import { getOpportunities, type Opportunity } from "@/lib/opportunities";
 
 export const dynamic = "force-dynamic";
+
+const li = (k: string) => `https://www.linkedin.com/jobs/search/?keywords=${encodeURIComponent(k)}&f_TPR=r604800&f_JT=F%2CC`;
+const QUICK = [
+  { label: "LinkedIn: Research Engineer (CV / XAI)", url: li('"research engineer" ("computer vision" OR "explainable AI")') },
+  { label: "LinkedIn: AI Engineer", url: li('"AI engineer" ("computer vision" OR "explainable")') },
+  { label: "LinkedIn: Research Assistant", url: li('"research assistant" ("computer vision" OR "neuroscience" OR "psychology" OR "explainable AI")') },
+  { label: "LinkedIn: PhD positions", url: li('"PhD" ("computer vision" OR "explainable AI" OR "neuroscience")') },
+  { label: "LinkedIn: MSc positions", url: li('("MSc" OR "master") scholarship ("computer vision" OR "AI" OR "neuroscience")') },
+  { label: "NUS Careers", url: "https://careers.nus.edu.sg/" },
+];
 export const maxDuration = 60;
 
 const TYPES: { key: Opportunity["type"] | "All"; label: string }[] = [
-  { key: "All", label: "All" }, { key: "PhD", label: "🎓 PhD" }, { key: "MSc", label: "📘 MSc" }, { key: "School", label: "☀️ Summer/winter schools" }, { key: "Job", label: "💼 Jobs & internships" },
+  { key: "All", label: "All" }, { key: "PhD", label: "🎓 PhD" }, { key: "MSc", label: "📘 MSc" }, { key: "School", label: "☀️ Summer/winter schools" }, { key: "Job", label: "💼 Jobs (RA / RE / AI Engineer)" },
 ];
 
 async function Found({ type }: { type: string }) {
   const r = await settle(getOpportunities());
   if (!r.ok) return <p className="text-sm text-bad">{r.error.slice(0, 300)}</p>;
   const today = todayISO();
-  const items = r.data.items.filter((o) => type === "All" || o.type === type || (type === "Job" && o.type === "Internship"));
+  const items = r.data.items.filter((o) => type === "All" || o.type === type);
   if (!items.length) return <Empty>Nothing in this category today. Check back tomorrow!</Empty>;
   return (
     <div className="space-y-3">
@@ -69,6 +79,12 @@ export default async function OpportunitiesPage({ searchParams }: { searchParams
           <p className="text-xs muted mt-3">Update the Status column (Interested → Applying → Applied → Interview → Offer) in your Life sheet.</p>
         </Section>
       )}
+      <Section title="🔎 Search directly">
+        <div className="flex flex-wrap gap-2 text-sm">
+          {QUICK.map((q) => <a key={q.label} href={q.url} target="_blank" rel="noreferrer" className="rounded-lg border px-3 py-1.5 hover:bg-black/5 dark:hover:bg-white/5">{q.label} ↗</a>)}
+        </div>
+        <p className="text-xs muted mt-2">These open LinkedIn and NUS with your searches already filled in (LinkedIn ones show the last 7 days).</p>
+      </Section>
       <div className="flex flex-wrap gap-2">{TYPES.map((t) => <a key={t.key} href={t.key === "All" ? "/opportunities" : `/opportunities?type=${t.key}`} className={`chip ${type === t.key ? "soft" : "muted"}`}>{t.label}</a>)}</div>
       <Section title="Open now">
         <Suspense fallback={<p className="text-sm muted animate-pulse">Searching the web for open positions… (the first visit of the day takes up to a minute)</p>}><Found type={type} /></Suspense>
