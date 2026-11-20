@@ -93,8 +93,8 @@ const VIEWS = [
   { key: "deadlines", label: "🎓 Research deadlines", href: "/updates?view=deadlines" },
 ];
 
-export default async function UpdatesPage({ searchParams }: { searchParams: Promise<{ view?: string; type?: string }> }) {
-  const { view, type = "All" } = await searchParams;
+export default async function UpdatesPage({ searchParams }: { searchParams: Promise<{ view?: string; type?: string; topic?: string }> }) {
+  const { view, type = "All", topic } = await searchParams;
   const current = view === "opportunities" || view === "deadlines" ? view : "reads";
   return (
     <div className="space-y-5">
@@ -105,7 +105,7 @@ export default async function UpdatesPage({ searchParams }: { searchParams: Prom
             className={`rounded-xl px-4 py-2 text-sm font-semibold border transition ${current === v.key ? "soft" : "muted hover:bg-white/5"}`}>{v.label}</a>
         ))}
       </nav>
-      {current === "opportunities" ? <OpportunitiesView type={type} /> : current === "deadlines" ? <DeadlinesView /> : <Reads />}
+      {current === "opportunities" ? <OpportunitiesView type={type} /> : current === "deadlines" ? <DeadlinesView topic={topic} /> : <Reads />}
     </div>
   );
 }
