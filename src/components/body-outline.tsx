@@ -94,7 +94,7 @@ export function BodyOutline({ entries }: { entries: MeasureEntry[] }) {
   const changed = measures.filter((m) => latest[m] < first[m]).length;
   return (
     <div>
-      <svg viewBox={`0 0 ${W} 490`} className="w-full max-w-md mx-auto block" role="img" aria-label={both ? "Your figure on day 1 and now, drawn from your measurements" : "Your figure, drawn from your measurements"}>
+      <svg viewBox={`0 0 ${W} 490`} className="w-full max-w-sm mx-auto block" style={{ maxHeight: "55vh" }} role="img" aria-label={both ? "Your figure on day 1 and now, drawn from your measurements" : "Your figure, drawn from your measurements"}>
         <defs>
           <filter id="lineGlow" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="2" result="b" /><feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge></filter>
         </defs>
