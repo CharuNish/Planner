@@ -207,10 +207,10 @@ If you had the older Content tabs (Queue, Posts, Captions, Channels), you can de
 **Wins (no setup needed).** Open the 🏆 Wins tab (or the box on Home), write what you did, pick a category, Save. The first save creates a **Wins** tab in your Life sheet by itself (columns: Date, Win, Category, Photo). You can also type wins straight into that tab.
 
 **Photos (one-time, free, about 2 minutes).** Photos are saved in Vercel's free storage (Vercel Blob, 1 GB free on the Hobby plan; photos are shrunk to about 300 KB, so that's thousands of photos).
-1. Go to vercel.com, open your **planner** project.
-2. Click the **Storage** tab, then **Create Database** (or **Create**), choose **Blob**, click Continue.
-3. Name it `wins-photos`. If it asks for access, choose **Public**. Click **Create**.
-4. When it asks which environments to connect, keep all ticked and click **Connect**. This adds `BLOB_READ_WRITE_TOKEN` for you, nothing to copy.
+1. Go to vercel.com, open your **planner** project, and click **Storage** in the left menu.
+2. Click the white **Create Database** button on the right (or top-right **Create New → Store**, which opens the same list).
+3. In the list that pops up, click **Blob** (Vercel's own file storage, usually near the top. If you don't see it, type `blob` in the search box). Click **Continue**.
+4. Name it `wins-photos`. If it asks for access, choose **Public**. Click **Create**. When it asks which environments to connect, keep all ticked and click **Connect**. This adds `BLOB_READ_WRITE_TOKEN` for you, nothing to copy.
 5. Go to **Deployments**, click the ⋯ next to the newest one, **Redeploy**. Done: the 📸 Add photo button now works.
 (Photo links are long random addresses, so nobody can guess them, but anyone you send a link to can open that photo.)
 

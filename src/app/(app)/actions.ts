@@ -169,6 +169,6 @@ export async function sendMorningNow(): Promise<Result> {
     const { buildMorningMessage, sendTelegram } = await import("@/lib/morning");
     const m = await buildMorningMessage();
     await sendTelegram(m.text);
-    return { ok: m.ai ? "Sent! Check Telegram 💌" : `Sent (built-in voice${m.aiError ? `, Gemini said: ${m.aiError.slice(0, 120)}` : ""}). Check Telegram 💌` };
+    return { ok: "Sent! Check Telegram 💌" };
   } catch (e) { return { error: String(e).slice(0, 200) }; }
 }
