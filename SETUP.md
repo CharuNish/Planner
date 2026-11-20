@@ -218,6 +218,11 @@ If you had the older Content tabs (Queue, Posts, Captions, Channels), you can de
 - It uses your existing `GEMINI_API_KEY` for one short call per morning. If Gemini is busy or out of free quota, a built-in bestie voice writes it instead, so it always arrives.
 - To test it any time: Home page → **💌 Send me the morning message now**.
 
+## 12. Apple Watch: steps, heart rate and workouts (optional)
+
+Your Apple Watch data can flow into the **💪 Body & Health** tab and the 7 AM Telegram recap every night, for free, using an iPhone Shortcut.
+Follow **[APPLE-WATCH.md](APPLE-WATCH.md)** (about 20 minutes, once). New Vercel setting: `HEALTH_KEY` (optional: `STEP_GOAL`, `MOVE_GOAL_KCAL`, `EXERCISE_GOAL_MIN`, `AGE`).
+
 ## Running it on your laptop (optional, for tinkering)
 
 1. Install [Node.js](https://nodejs.org) (the LTS version).
