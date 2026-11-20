@@ -210,3 +210,38 @@ export async function getCountdown(): Promise<{ date: string; label: string }> {
   if (c?.value && /^\d{4}-\d{2}-\d{2}$/.test(c.value)) return { date: c.value, label: c.label || "Countdown" };
   return { date: process.env.COUNTDOWN_DATE || "2027-01-01", label: process.env.COUNTDOWN_LABEL || "New Year 2027 🎆" };
 }
+
+// ───── Wins (special / good things you did each day) ─────
+// "Wins" tab in the Life sheet: Date | Win | Category | Photo. The Wins page adds rows (and creates the tab the first time).
+export type Win = { date: string; text: string; category: string; photo: string; row: number };
+export const WIN_HEADERS = ["Date", "Win", "Category", "Photo"];
+export const WIN_CATEGORIES: { key: string; icon: string }[] = [
+  { key: "Fitness", icon: "🏃‍♀️" }, { key: "Mind", icon: "🧘‍♀️" }, { key: "Kindness", icon: "💝" }, { key: "Learning", icon: "🧠" },
+  { key: "Career", icon: "💼" }, { key: "Fun", icon: "🎉" }, { key: "Self-care", icon: "🛁" }, { key: "Other", icon: "✨" },
+];
+export const winIcon = (c: string) => WIN_CATEGORIES.find((x) => x.key.toLowerCase() === c.toLowerCase())?.icon || "✨";
+export async function loadWins(): Promise<{ demo: boolean; items: Win[] }> {
+  if (lifeIsDemo()) {
+    const t = todayISO();
+    const d = [
+      [0, "Walked 10,412 steps 👟", "Fitness"], [-1, "Held a yoga headstand for 20 seconds!!", "Mind"], [-1, "Volunteered at the animal shelter", "Kindness"],
+      [-2, "Prof said my figure was the clearest in the class", "Learning"], [-4, "Cooked air fryer chickpeas and they slapped", "Fun"], [-6, "First 5K run without stopping", "Fitness"],
+    ] as const;
+    return { demo: true, items: d.map(([o, text, category], i) => ({ date: addDays(t, o), text, category, photo: "", row: i + 2 })) };
+  }
+  const rows = await tab("Wins").catch(() => []);
+  return {
+    demo: false,
+    items: rows.map((r, i) => ({ date: parseDate(r["date"]) || "", text: str(r["win"] ?? r["highlight"]), category: str(r["category"]) || "Other", photo: str(r["photo"]), row: i + 2 }))
+      .filter((w) => w.date && w.text).sort((a, b) => b.date.localeCompare(a.date) || b.row - a.row),
+  };
+}
+
+export function analyseWins(items: Win[], today = todayISO()) {
+  const days = new Set(items.map((w) => w.date));
+  let streak = 0; let d = days.has(today) ? today : addDays(today, -1);
+  while (days.has(d) && streak < 1000) { streak++; d = addDays(d, -1); }
+  const inLast = (n: number) => items.filter((w) => daysBetween(w.date, today) < n && w.date <= today).length;
+  const byCat = WIN_CATEGORIES.map((c) => ({ ...c, n: items.filter((w) => (w.category || "Other").toLowerCase() === c.key.toLowerCase()).length })).filter((c) => c.n);
+  return { total: items.length, week: inLast(7), month: inLast(30), streak, today: items.filter((w) => w.date === today).length, byCat, photos: items.filter((w) => w.photo).length };
+}
