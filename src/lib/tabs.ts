@@ -5,7 +5,7 @@ export const TABS: { href: string; label: string; icon: string; soon?: boolean }
   { href: "/studies", label: "Studies", icon: "📚" },
   { href: "/updates", label: "Updates", icon: "📰" },
   { href: "/opportunities", label: "Opportunities", icon: "🚀" },
-  { href: "/weight", label: "Weight", icon: "⚖️" },
+  { href: "/weight", label: "Body & Health", icon: "💪" },
   { href: "/habits", label: "Habits", icon: "✅" },
   { href: "/goals", label: "Mini goals", icon: "🎯" },
   { href: "/wins", label: "Wins", icon: "🏆" },
