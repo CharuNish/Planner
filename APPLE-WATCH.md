@@ -71,7 +71,12 @@ Exactly like 2.2 (Find Health Samples → Calculate Statistics → Set Variable)
    Set the calculation to **Minimum** → **Set Variable** `HRMin`.
 4. Repeat 3 once more with **Maximum** → **Set Variable** `HRMax`.
 
-### 2.5 Workouts
+### 2.5 Workouts (most iPhones: SKIP this section)
+Many iPhones don't let Shortcuts read workouts at all (you'll only see "Log Workout" and "Search Fitness+").
+If **Find Health Samples** has no **Workouts** type and there's no **Find Workouts** action, skip to 2.6 and leave out the `workouts` field.
+Instead, log what you trained with one tap on the **💪 Body & Health** tab, and any day with 30+ watch exercise minutes ticks gym automatically.
+
+Only if your iPhone does have it:
 1. **Find Health Samples** → Type **Workouts**, Start Date **is today**.
 2. Search **Repeat with Each** → add it (it uses the Health Samples automatically).
 3. *Inside* the Repeat (between **Repeat with each** and **End Repeat**), add a **Text** action. In its box:
@@ -101,7 +106,7 @@ Exactly like 2.2 (Find Health Samples → Calculate Statistics → Set Variable)
 | `hr_avg` | variable **HRAvg** |
 | `hr_min` | variable **HRMin** |
 | `hr_max` | variable **HRMax** |
-| `workouts` | the **Combined Text** bubble |
+| `workouts` | the **Combined Text** bubble (only if you did 2.5, otherwise leave this row out) |
 
 6. Last action: search **Get Dictionary Value** → add it → tap **Key** → type **`message`**.
 7. Search **Show Notification** → add it. It will show the **Dictionary Value**, so you get a little "✅ Saved" pop-up.
@@ -136,4 +141,5 @@ You can also run it manually any time (or add it to your Home Screen: open the s
 - **Life sheet → Health tab** (made automatically): one row per day.
 - **💪 Body & Health tab**: rings, 30-day daily steps chart, a heart check that flags unusual BPM (e.g. resting rate 8+ above your normal, over 100 or under 40), a workout summary with weekly Strength / Cardio / Mobility targets, and a "what to train next" card.
 - **7 AM Telegram**: yesterday's steps, workouts, kcal and resting heart rate in the recap. If the watch hasn't synced for 2+ days, it nags you.
-- **Habits**: a workout of 15+ minutes that isn't a walk ticks **gym** for that day.
+- **Habits**: 30+ exercise minutes on the watch, or a logged workout of 15+ minutes that isn't a walk, ticks **gym** for that day.
+- **Workouts**: tap "What did you train?" on the Body & Health tab (Strength, Cardio, HIIT, Yoga…). They're saved in a **Workouts** tab in the Life sheet and feed the workout summary and "what to train next".

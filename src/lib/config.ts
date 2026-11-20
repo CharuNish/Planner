@@ -31,6 +31,7 @@ export const config = {
   stepGoal: Number(process.env.STEP_GOAL || 10000),
   moveGoal: Number(process.env.MOVE_GOAL_KCAL || 400),
   exerciseGoal: Number(process.env.EXERCISE_GOAL_MIN || 30),
+  gymExerciseMin: Number(process.env.GYM_EXERCISE_MIN || 30), // watch exercise minutes that count as a gym day
   age: Number(process.env.AGE || 0), // optional: used to judge very high heart-rate spikes (220 - age)
   geminiKey: process.env.GEMINI_API_KEY || "",
   youtubeKey: process.env.YOUTUBE_API_KEY || "",

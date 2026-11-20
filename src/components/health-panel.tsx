@@ -4,7 +4,8 @@ import { Hype } from "@/components/hype";
 import { Empty, ProgressBar, Section, Stat } from "@/components/ui";
 import { config } from "@/lib/config";
 import { addDays, prettyDate, todayISO } from "@/lib/dates";
-import { analyseHealth, healthHype, heartFlags, isGymWorkout, workoutKind, KIND_ICON, WEEK_TARGET, workoutPlan, type HealthDay } from "@/lib/health";
+import { WorkoutLogger } from "@/components/forms2";
+import { analyseHealth, healthHype, heartFlags, isGymWorkout, workoutKind, KIND_ICON, WEEK_TARGET, WORKOUT_CHOICES, workoutPlan, type HealthDay } from "@/lib/health";
 
 const k = (n: number | null | undefined) => (n == null ? "–" : Math.round(n).toLocaleString("en-US"));
 
@@ -22,12 +23,15 @@ export function HealthPanel({ days, demo, hypeOffset = 0 }: { days: HealthDay[];
   const steps = range.map((date, i) => ({ label: label(date), steps: a.last30[i]?.steps ?? null }));
   const hr = range.map((date, i) => ({ label: label(date), resting: a.last30[i]?.restingHr ?? null, avg: a.last30[i]?.avgHr ?? null, max: a.last30[i]?.maxHr ?? null }));
   const g = { steps: config.stepGoal, move: config.moveGoal, ex: config.exerciseGoal };
+  // A day the watch saw exercise but no workout was logged: ask what it was.
+  const unlogged = [a.today, a.yesterday].find((x) => x && (x.exerciseMin ?? 0) >= 15 && !x.workouts.length) ?? null;
   const syncChip = a.latest ? (a.daysSinceSync === 0 ? "🟢 watch synced today" : a.daysSinceSync === 1 ? "🟢 watch synced yesterday" : `🟠 last watch sync ${a.daysSinceSync} days ago`) : null;
 
   if (!demo && !days.length) {
     return (
       <Section title="⌚ Apple Watch">
-        <Empty>Nothing synced from your watch yet. Build the iPhone Shortcut (APPLE-WATCH.md), tap ▶️ once, and your steps, heart rate and workouts land here.</Empty>
+        <Empty>Nothing synced from your watch yet. Build the iPhone Shortcut (APPLE-WATCH.md), tap ▶️ once, and your steps and heart rate land here.</Empty>
+        <div className="mt-4"><div className="text-sm font-medium mb-2">💪 Log a workout</div><WorkoutLogger choices={WORKOUT_CHOICES} /></div>
       </Section>
     );
   }
@@ -91,6 +95,10 @@ export function HealthPanel({ days, demo, hypeOffset = 0 }: { days: HealthDay[];
         </Section>
 
         <Section title="🏋️‍♀️ Workouts & what to train next">
+          <div className="mb-4">
+            <div className="text-sm font-medium mb-2">{unlogged ? `⌚ Your watch saw ${unlogged.exerciseMin} exercise min ${unlogged.date === today ? "today" : "yesterday"}. What did you train?` : "💪 What did you train?"}</div>
+            <WorkoutLogger choices={WORKOUT_CHOICES} minutes={unlogged?.exerciseMin ?? undefined} date={unlogged?.date} />
+          </div>
           <div className="rounded-xl p-4 mb-4 soft">
             <div className="kicker mb-1">next up</div>
             <div className="text-lg font-semibold" style={{ fontFamily: "var(--font-display)" }}>{plan.next.title}</div>

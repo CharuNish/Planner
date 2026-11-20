@@ -5,7 +5,7 @@
 import { config, lifeIsDemo } from "./config";
 import { addDays, daysBetween, parseDate, todayISO } from "./dates";
 import { dailyShuffle } from "./hype";
-import { appendRow, ensureTab, num, readSheet, readSheetRows, str, updateRow } from "./google";
+import { appendRow, appendRowCreatingTab, ensureTab, num, readSheet, readSheetRows, str, updateRow } from "./google";
 
 export type Workout = { type: string; minutes: number };
 export type HealthDay = {
@@ -23,6 +23,10 @@ export type HealthDay = {
 };
 
 export const HEALTH_TAB = "Health";
+export const WORKOUT_TAB = "Workouts";
+export const WORKOUT_HEADERS = ["Date", "Type", "Minutes", "Notes"];
+/** One-tap choices on the Body & Health tab. */
+export const WORKOUT_CHOICES = ["Strength", "Cardio", "HIIT", "Yoga", "Pilates", "Run", "Walk", "Dance"];
 export const HEALTH_HEADERS = ["Date", "Steps", "Distance (km)", "Active (kcal)", "Exercise (min)", "Resting HR", "Avg HR", "Min HR", "Max HR", "Workouts", "Workout (min)", "Synced At"];
 
 const r1 = (n: number) => Math.round(n * 10) / 10;
@@ -100,6 +104,15 @@ export async function loadHealth(): Promise<{ demo: boolean; days: HealthDay[] }
   })).filter((d) => d.date);
   // If a date somehow appears twice, keep the last one.
   const map = new Map(days.map((d) => [d.date, d]));
+  // Workouts you log by hand on the Body & Health tab (iPhone Shortcuts can't read workouts on every iPhone).
+  const manual = await readSheet(config.google.lifeSheetId, WORKOUT_TAB).catch(() => []);
+  for (const r of manual) {
+    const date = parseDate(r["date"]); const type = str(r["type"]);
+    if (!date || !type) continue;
+    const day = map.get(date) || { date, steps: null, distanceKm: null, activeKcal: null, exerciseMin: null, restingHr: null, avgHr: null, minHr: null, maxHr: null, workouts: [], syncedAt: "" };
+    day.workouts = [...day.workouts, { type, minutes: num(r["minutes"]) }];
+    map.set(date, day);
+  }
   return { demo: false, days: [...map.values()].sort((a, b) => a.date.localeCompare(b.date)) };
 }
 
@@ -145,15 +158,27 @@ export async function saveHealthDay(d: HealthInput): Promise<"added" | "updated"
   return "added";
 }
 
-/** Ticks "gym" in the Habits tab when the watch saw a real workout (not just a walk). Skips if it's already ticked. */
+/** Ticks "gym" in the Habits tab when the watch saw a real workout (not just a walk) or 30+ exercise minutes. Skips if it's already ticked. */
 export async function tickGymFromWatch(d: HealthInput): Promise<boolean> {
   const gym = d.workouts.filter(isGymWorkout);
-  if (!gym.length) return false;
+  const exOk = (d.exerciseMin ?? 0) >= config.gymExerciseMin;
+  if (!gym.length && !exOk) return false;
+  const note = gym.length ? gym.map((w) => `${w.type} ${Math.round(w.minutes)} min`).join(", ") : `${d.exerciseMin} exercise min`;
+  return tickGym(d.date, `⌚ ${note}`);
+}
+
+async function tickGym(date: string, note: string): Promise<boolean> {
   const rows = await readSheet(config.google.lifeSheetId, "Habits").catch(() => []);
-  const already = rows.some((r) => parseDate(r["date"]) === d.date && /^(y|yes|true|1|✓|✔|done|x)$/i.test(str(r["gym"])));
+  const already = rows.some((r) => parseDate(r["date"]) === date && /^(y|yes|true|1|✓|✔|done|x)$/i.test(str(r["gym"])));
   if (already) return false;
-  await appendRow(config.google.lifeSheetId, "Habits", [d.date, "", "", "yes", `⌚ ${gym.map((w) => `${w.type} ${Math.round(w.minutes)} min`).join(", ")}`]);
+  await appendRow(config.google.lifeSheetId, "Habits", [date, "", "", "yes", note]);
   return true;
+}
+
+/** Saves a workout you logged by hand (Workouts tab, made automatically) and ticks gym if it counts. */
+export async function logManualWorkout(date: string, type: string, minutes: number, notes = ""): Promise<boolean> {
+  await appendRowCreatingTab(config.google.lifeSheetId, WORKOUT_TAB, WORKOUT_HEADERS, [date, type, minutes, notes]);
+  return isGymWorkout({ type, minutes }) ? tickGym(date, `🏋️‍♀️ ${type} ${minutes} min`).catch(() => false) : false;
 }
 
 // ───── Analysis ─────
@@ -297,7 +322,7 @@ export function workoutPlan(days: HealthDay[], today = todayISO()) {
   const IDEAS: Record<keyof typeof progress, { title: string; how: string; why: string }> = {
     Strength: { title: "Strength day 🏋️‍♀️", how: "30–40 min full body: squats, glute bridges / hip thrusts, lunges, push-ups (knees are fine), dumbbell rows, plank. 3 rounds of 10–12.", why: `Muscle is what burns fat while you sleep and gives the snatched shape the scale can't show. ${since(s)}.` },
     Cardio: { title: "Cardio day 🔥", how: "30–40 min: incline walk, cycling, elliptical or dance. Short on time? 20 min HIIT (30 s hard, 30 s easy).", why: `You're at ${cardioMin} of ${WEEK_TARGET.Cardio} cardio minutes this week (walks count half). ${since(c)}.` },
-    Mobility: { title: "Stretch / yoga day 🧘‍♀️", how: "20–30 min yoga or a stretch flow: hips, hamstrings, back. Log it as Yoga on the watch.", why: "Keeps you injury-free and less sore so you can keep showing up. Your hips will write you a thank-you note." },
+    Mobility: { title: "Stretch / yoga day 🧘‍♀️", how: "20–30 min yoga or a stretch flow: hips, hamstrings, back. Then tap Yoga above to log it.", why: "Keeps you injury-free and less sore so you can keep showing up. Your hips will write you a thank-you note." },
   };
   let next: { title: string; how: string; why: string };
   if (focus) next = IDEAS[focus];
