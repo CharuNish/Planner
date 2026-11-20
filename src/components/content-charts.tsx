@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 type Row = Record<string, string | number | null>;
 type Account = { channel: string; platform: string };
@@ -69,5 +69,29 @@ export function ContentTrends({ followers, likes, accounts, channels, colors }: 
         </section>
       </div>
     </div>
+  );
+}
+
+/** Collab money per month: paid vs still waiting, stacked. */
+export function CollabMonthsChart({ data, currency }: { data: { label: string; earned: number; pending: number }[]; currency: string }) {
+  if (!data.some((d) => d.earned || d.pending)) return <p className="text-sm muted py-6 text-center">Your monthly collab money will show here once you add prices to the Collabs tab 💸</p>;
+  const money = (v: unknown) => `${currency} ${Number(v).toLocaleString("en-US")}`;
+  return (
+    <>
+      <ResponsiveContainer width="100%" height={200}>
+        <BarChart data={data} margin={{ left: -4, right: 8, top: 8 }}>
+          <CartesianGrid stroke="var(--grid)" vertical={false} />
+          <XAxis dataKey="label" {...axis} />
+          <YAxis {...axis} tickFormatter={short} width={44} />
+          <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "rgba(244,114,182,.08)" }} formatter={(v, n) => [money(v), n === "earned" ? "Paid" : "Waiting"]} />
+          <Bar dataKey="earned" name="earned" stackId="m" fill="#e64596" maxBarSize={30} isAnimationActive={false} stroke="var(--card-solid)" strokeWidth={2} />
+          <Bar dataKey="pending" name="pending" stackId="m" fill="#7076f0" radius={[4, 4, 0, 0]} maxBarSize={30} isAnimationActive={false} stroke="var(--card-solid)" strokeWidth={2} />
+        </BarChart>
+      </ResponsiveContainer>
+      <div className="flex gap-4 text-xs muted mt-2">
+        <span className="inline-flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm" style={{ background: "#e64596" }} />Paid</span>
+        <span className="inline-flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm" style={{ background: "#7076f0" }} />Waiting to be paid</span>
+      </div>
+    </>
   );
 }

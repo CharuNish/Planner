@@ -175,13 +175,14 @@ You fill in a spreadsheet; the **Content** tab turns it into follower counts, gr
 
 ## 10. Open the Content tab once
 
-That's the whole setup. The first time you open **Content**, the site adds three tabs to your Life sheet (or to `CONTENT_SHEET_ID` if you set one), with the headers and dropdowns ready:
+That's the whole setup. The first time you open **Content**, the site adds four tabs to your Life sheet (or to `CONTENT_SHEET_ID` if you set one), with the headers and dropdowns ready:
 
 | Tab | One row per… | Columns |
 |---|---|---|
 | **Followers** | account, each time you check (once a week is plenty) | Date, Channel, Platform, Followers |
 | **Uploads** | thing you made | Date, Channel, Title, Type, Where, Instagram/Facebook/TikTok/YouTube Likes, …Views, Link, Notes |
 | **Collabs** | brand deal | Date, Brand, Channel, Platforms, Video idea, Price, Status, Due date, Paid, Contact, Notes |
+| **Follower Goals** | account (already filled in for you) | Channel, Platform, Goal. Type a goal, or leave it empty to aim for the next round number |
 
 **Uploads:** a Reel, Picture or Carousel counts for every platform of that channel (Life with C: Instagram, TikTok, YouTube; Ane Manda: Instagram, Facebook, TikTok, YouTube). Pick **Long video** as the Type and it counts for YouTube only. Want something else? Type the platforms in **Where** (e.g. `Instagram, TikTok`). Fill in the likes for each platform whenever you check; views are optional.
 

@@ -115,13 +115,14 @@ export async function appendRowCreatingTab(sheetId: string, tab: string, headers
 }
 
 /** Creates a tab with a bold, frozen header row (and optional dropdowns per column), if it isn't there yet. */
-export async function ensureTab(sheetId: string, tab: string, headers: string[], dropdowns: Record<string, string[]> = {}) {
+export async function ensureTab(sheetId: string, tab: string, headers: string[], dropdowns: Record<string, string[]> = {}, rows: unknown[][] = []) {
   let added: { replies?: { addSheet?: { properties?: { sheetId?: number } } }[] };
   try {
     added = await gfetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}:batchUpdate`, { method: "POST", body: JSON.stringify({ requests: [{ addSheet: { properties: { title: tab, gridProperties: { frozenRowCount: 1 } } } }] }) });
   } catch (e) { if (/already exists/i.test(String(e))) return; throw e; }
   const id = added.replies?.[0]?.addSheet?.properties?.sheetId ?? 0;
   await appendRow(sheetId, tab, headers);
+  for (const r of rows) await appendRow(sheetId, tab, r);
   const requests: object[] = [{ repeatCell: { range: { sheetId: id, startRowIndex: 0, endRowIndex: 1 }, cell: { userEnteredFormat: { textFormat: { bold: true } } }, fields: "userEnteredFormat.textFormat.bold" } }];
   for (const [header, values] of Object.entries(dropdowns)) {
     const col = headers.indexOf(header);
