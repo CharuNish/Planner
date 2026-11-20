@@ -6,6 +6,7 @@ import { prettyDate, todayISO } from "@/lib/dates";
 import { settle } from "@/lib/fetchx";
 import { hasGemini } from "@/lib/gemini";
 import { getMedium, getPapers, getTrending, getVideos } from "@/lib/updates";
+import { DeadlinesView } from "./deadlines";
 import { OpportunitiesView } from "./opportunities";
 
 export const dynamic = "force-dynamic";
@@ -89,11 +90,12 @@ async function Videos() {
 const VIEWS = [
   { key: "reads", label: "📰 Daily reads", href: "/updates" },
   { key: "opportunities", label: "🚀 Opportunities", href: "/updates?view=opportunities" },
+  { key: "deadlines", label: "🎓 Research deadlines", href: "/updates?view=deadlines" },
 ];
 
 export default async function UpdatesPage({ searchParams }: { searchParams: Promise<{ view?: string; type?: string }> }) {
   const { view, type = "All" } = await searchParams;
-  const current = view === "opportunities" ? "opportunities" : "reads";
+  const current = view === "opportunities" || view === "deadlines" ? view : "reads";
   return (
     <div className="space-y-5">
       <PageHeader title="📰 Updates" subtitle={`Fresh picks and open opportunities for ${prettyDate(todayISO(), { weekday: "long", day: "numeric", month: "long" })}. Refreshed once a day, every morning.`} />
@@ -103,7 +105,7 @@ export default async function UpdatesPage({ searchParams }: { searchParams: Prom
             className={`rounded-xl px-4 py-2 text-sm font-semibold border transition ${current === v.key ? "soft" : "muted hover:bg-white/5"}`}>{v.label}</a>
         ))}
       </nav>
-      {current === "opportunities" ? <OpportunitiesView type={type} /> : <Reads />}
+      {current === "opportunities" ? <OpportunitiesView type={type} /> : current === "deadlines" ? <DeadlinesView /> : <Reads />}
     </div>
   );
 }
