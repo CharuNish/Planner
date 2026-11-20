@@ -22,7 +22,15 @@ async function gfetch(url: string, init: RequestInit = {}) {
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", ...(init.headers || {}) },
     cache: "no-store",
   });
-  if (!res.ok) throw new Error(`Google API ${res.status}: ${(await res.text()).slice(0, 300)}`);
+  if (!res.ok) {
+    const body = await res.text();
+    // Friendly explanations for the most common setup mistakes.
+    if (body.includes("must not be an Office file")) throw new Error("This is an uploaded Excel (.xlsx) file, not a Google Sheet. Open it, click File → Save as Google Sheets, share the new copy with the robot email, and use the new copy's ID.");
+    if (res.status === 403) throw new Error("Google says no access (403). Share the sheet/calendar with the robot's email, and check the Sheets and Calendar APIs are enabled.");
+    if (res.status === 404) throw new Error("Not found (404). The sheet or calendar ID is probably wrong.");
+    if (body.includes("Unable to parse range")) throw new Error("A tab is missing or misnamed. Check the tab names match the template exactly (e.g. Transactions, Budgets, Bills).");
+    throw new Error(`Google API ${res.status}: ${body.slice(0, 300)}`);
+  }
   return res.json();
 }
 
