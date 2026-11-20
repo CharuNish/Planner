@@ -75,10 +75,10 @@ const JOBS_AC_UK = [
   "https://www.jobs.ac.uk/feeds/subject-areas/biological-sciences/neuroscience",
 ];
 
-async function rssFeed(url: string, source: string): Promise<Opportunity[]> {
+async function rssFeed(url: string, source: string, o: { fieldForJobs?: boolean; org?: string; country?: string } = {}): Promise<Opportunity[]> {
   const xml = await getText(url);
   const items = blocks(xml, "item");
-  if (!items.length) throw new Error("no listings in feed");
+  if (!items.length) { if (/<rss|<channel/i.test(xml)) return []; throw new Error("not an RSS feed (site may have changed)"); }
   const cutoff = addDays(todayISO(), -45);
   const out: Opportunity[] = [];
   for (const it of items) {
@@ -89,11 +89,64 @@ async function rssFeed(url: string, source: string): Promise<Opportunity[]> {
     if (!title || !link || (posted && posted < cutoff) || NOT_WANTED.test(title)) continue;
     const text = `${title} ${desc}`;
     const type: Opportunity["type"] | null = PHD.test(title) ? "PhD" : MSC.test(title) ? "MSc" : /summer school|winter school/i.test(title) ? "School" : JOB_TITLES.test(title) ? "Job" : null;
-    if (!type || (type !== "Job" && !FIELD.test(text))) continue;
+    if (!type || ((type !== "Job" || o.fieldForJobs) && !FIELD.test(text))) continue;
     const closes = desc.match(/clos\w*\s*(?:date)?\s*:?\s*([0-9]{1,2}\s+\w+\s+[0-9]{4}|[0-9]{4}-[0-9]{2}-[0-9]{2})/i)?.[1];
-    out.push({ title, org: desc.match(/^([^,.|]{3,60})/)?.[1]?.trim() || "", type, country: "", deadline: closes ? parseDate(closes) || null : null, url: link, summary: desc.slice(0, 180), source });
+    out.push({ title, org: o.org || desc.match(/^([^,.|]{3,60})/)?.[1]?.trim() || "", type, country: o.country || "", deadline: closes ? parseDate(closes) || null : null, url: link, summary: desc.slice(0, 180), source });
   }
   return out;
+}
+
+// ───── LinkedIn (its public, logged-out job search) ─────
+const LINKEDIN_QUERIES: { keywords: string; type: Opportunity["type"] }[] = [
+  { keywords: "research engineer computer vision", type: "Job" },
+  { keywords: "research engineer explainable AI", type: "Job" },
+  { keywords: "AI engineer computer vision", type: "Job" },
+  { keywords: "research assistant computer vision", type: "Job" },
+  { keywords: "research assistant neuroscience", type: "Job" },
+  { keywords: "PhD computer vision", type: "PhD" },
+];
+async function linkedIn(): Promise<Opportunity[]> {
+  const out: Opportunity[] = [];
+  let lastError = "";
+  for (const [i, q] of LINKEDIN_QUERIES.entries()) {
+    if (i) await new Promise((r) => setTimeout(r, 800)); // be gentle, LinkedIn blocks fast bursts
+    try {
+      // f_TPR=r604800: last 7 days. f_JT=F,C: full-time or contract.
+      const html = await getText(`https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?keywords=${encodeURIComponent(q.keywords)}&f_TPR=r604800${q.type === "Job" ? "&f_JT=F%2CC" : ""}&start=0`, { headers: { Accept: "text/html" } });
+      for (const card of html.split(/<li[\s>]/).slice(1)) {
+        const title = stripTags(card.match(/class="base-search-card__title"[^>]*>([\s\S]*?)<\/h3>/)?.[1] || "");
+        const org = stripTags(card.match(/class="base-search-card__subtitle"[^>]*>([\s\S]*?)<\/h4>/)?.[1] || "");
+        const place = stripTags(card.match(/class="job-search-card__location"[^>]*>([\s\S]*?)<\/span>/)?.[1] || "");
+        const url = (card.match(/href="(https:\/\/[^"]*linkedin\.com\/jobs\/view\/[^"?]+)/)?.[1] || "").replace(/&amp;/g, "&");
+        const posted = card.match(/datetime="(\d{4}-\d{2}-\d{2})"/)?.[1] || "";
+        if (!title || !url || NOT_WANTED.test(title)) continue;
+        if (q.type === "Job" && !JOB_TITLES.test(title)) continue;
+        if (q.type === "PhD" && !PHD.test(title)) continue;
+        out.push({ title, org, type: q.type, country: place, deadline: null, url, summary: posted ? `Posted on LinkedIn ${posted}` : "Posted on LinkedIn this week", source: "LinkedIn" });
+      }
+    } catch (e) { lastError = String(e instanceof Error ? e.message : e); }
+  }
+  if (!out.length && lastError) throw new Error(lastError);
+  return out;
+}
+
+// ───── University career sites ─────
+// NUS and EPFL run SAP SuccessFactors career sites, which publish RSS search results.
+const sfRss = (base: string, kw: string) => `${base}/services/rss/job/?locale=en_GB&keywords=${encodeURIComponent(`(${kw})`)}`;
+const CAREER_SITES: { name: string; country: string; urls: string[] }[] = [
+  { name: "NUS", country: "Singapore", urls: ["research engineer", "research assistant", "AI engineer"].map((k) => sfRss("https://careers.nus.edu.sg", k)) },
+  { name: "EPFL", country: "Switzerland", urls: ["research engineer", "AI engineer", "doctoral"].map((k) => sfRss("https://careers.epfl.ch", k)) },
+  // MBZUAI's and INSAIT's sites are WordPress, which always has a /feed/.
+  { name: "MBZUAI", country: "UAE", urls: ["https://careers.mbzuai.ac.ae/feed/"] },
+  { name: "INSAIT", country: "Bulgaria", urls: ["https://insait.ai/feed/"] },
+  // jobRxiv carries NTU and SUTD research posts (WP Job Manager feed).
+  { name: "jobRxiv (NTU / SUTD / Singapore)", country: "Singapore", urls: ["research engineer", "research assistant"].map((k) => `https://jobrxiv.org/?feed=job_feed&search_keywords=${encodeURIComponent(k)}&search_location=Singapore`) },
+];
+async function careerSite(site: (typeof CAREER_SITES)[number]): Promise<Opportunity[]> {
+  const settled = await Promise.allSettled(site.urls.map((u) => rssFeed(u, site.name.split(" ")[0], { fieldForJobs: true, org: site.name.startsWith("jobRxiv") ? "" : site.name, country: site.country })));
+  const ok = settled.filter((r) => r.status === "fulfilled");
+  if (!ok.length) throw (settled[0] as PromiseRejectedResult).reason;
+  return ok.flatMap((r) => (r as PromiseFulfilledResult<Opportunity[]>).value);
 }
 
 /** Free remote-job APIs (Remotive, Jobicy, Arbeitnow), filtered to RA / RE / AI Engineer. */
@@ -112,6 +165,8 @@ async function jobApis(): Promise<{ name: string; run: () => Promise<Opportunity
       return (d.data || []).filter((j) => keep(j.title, (j.job_types || []).join(" ")) && new Date(j.created_at * 1000).toISOString().slice(0, 10) >= recent)
         .map((j) => ({ title: j.title, org: j.company_name, type: "Job" as const, country: j.remote ? `Remote / ${j.location}` : j.location, deadline: null, url: j.url, summary: (j.job_types || []).join(", "), source: "Arbeitnow" }));
     } },
+    { name: "LinkedIn", run: linkedIn },
+    ...CAREER_SITES.map((c) => ({ name: c.name, run: () => careerSite(c) })),
     ...JOBS_AC_UK.map((u) => ({ name: `jobs.ac.uk (${u.split("/").pop()})`, run: () => rssFeed(u, "jobs.ac.uk") })),
   ];
 }
@@ -148,4 +203,4 @@ async function allOpportunities() {
 }
 
 const LAST_GOOD_KEY = "opportunities";
-export const getOpportunities = daily("opportunities-e", allOpportunities);
+export const getOpportunities = daily("opportunities-f", allOpportunities);
