@@ -172,3 +172,17 @@ export async function sendMorningNow(): Promise<Result> {
     return { ok: "Sent! Check Telegram 💌" };
   } catch (e) { return { error: String(e).slice(0, 200) }; }
 }
+
+export async function logWorkout(_: Result, f: FormData): Promise<Result> {
+  const n = needLife(); if (n) return n;
+  const type = String(f.get("type") || "").trim();
+  const minutes = Math.round(Number(f.get("minutes") || 0));
+  if (!type) return { error: "Pick what you trained 💪" };
+  if (!(minutes > 0)) return { error: "How many minutes?" };
+  try {
+    const { logManualWorkout } = await import("@/lib/health");
+    const gym = await logManualWorkout(String(f.get("date") || todayISO()), type, minutes, String(f.get("notes") || ""));
+    revalidatePath("/", "layout");
+    return { ok: `${type} ${minutes} min saved${gym ? ", gym ticked 🏋️‍♀️" : ""}. Look at you go!` };
+  } catch (e) { return { error: String(e) }; }
+}
