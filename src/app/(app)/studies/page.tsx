@@ -4,10 +4,12 @@ import { DemoBanner, Empty, PageHeader, ProgressBar, Section, Stat, StatusChip }
 import { prettyDate } from "@/lib/dates";
 import { analyseStudies, loadStudies } from "@/lib/studies";
 import { loadEvents } from "@/lib/calendar";
-import { studyNudges, type Nudge } from "@/lib/nudges";
+import { hoursLeftToday, studyNudges, type Nudge } from "@/lib/nudges";
+import { Ring } from "@/components/fx";
 
 const BUBBLE: Record<Nudge["level"], string> = { fire: "#fb7185", warn: "#fbbf24", info: "#22d3ee", good: "#34d399" };
-function NudgeBot({ nudges }: { nudges: Nudge[] }) {
+type Mission = { hoursToday: number; target: number; next?: { title: string; daysLeft: number }; step?: string };
+function NudgeBot({ nudges, mission }: { nudges: Nudge[]; mission: Mission }) {
   if (!nudges.length) return null;
   return (
     <section className="card p-5">
@@ -15,10 +17,31 @@ function NudgeBot({ nudges }: { nudges: Nudge[] }) {
         <div className="w-10 h-10 rounded-2xl grid place-items-center text-xl" style={{ background: "linear-gradient(135deg,#8b5cf6,#ec4899)", boxShadow: "0 0 18px rgba(236,72,153,.45)" }}>🤖</div>
         <div><h2 className="font-semibold">Deadline bot</h2><div className="text-xs muted">online · judging your progress</div></div>
       </div>
+      <div className="grid lg:grid-cols-[1fr_17rem] gap-5 items-start">
       <div className="space-y-2.5">
         {nudges.map((n, i) => (
           <div key={i} className="rise max-w-3xl rounded-2xl rounded-tl-md px-4 py-3 text-[0.95rem] leading-relaxed" style={{ animationDelay: `${i * 0.12}s`, background: `color-mix(in srgb, ${BUBBLE[n.level]} 11%, rgba(13,16,32,.7))`, border: `1px solid color-mix(in srgb, ${BUBBLE[n.level]} 40%, transparent)`, boxShadow: n.level === "fire" ? `0 0 18px color-mix(in srgb, ${BUBBLE[n.level]} 30%, transparent)` : undefined }}>{n.text}</div>
         ))}
+      </div>
+      <aside className="rounded-2xl p-4 space-y-4" data-tile="">
+        <div className="kicker">today&apos;s mission</div>
+        <div className="flex items-center gap-4">
+          <Ring value={mission.target ? mission.hoursToday / mission.target : 0} tone={mission.hoursToday >= mission.target ? "good" : "warn"} size={92} label="" sub="">
+            <span className="text-lg font-semibold tabular">{mission.hoursToday}<span className="text-xs muted">/{mission.target}h</span></span>
+          </Ring>
+          <div className="text-sm">
+            <div className="muted text-xs">Time left before bed</div>
+            <div className="text-2xl font-semibold tabular" style={{ fontFamily: "var(--font-display)" }}>{Math.max(0, Math.round((hoursLeftToday() - 1.5) * 10) / 10)}h</div>
+          </div>
+        </div>
+        {mission.next && (
+          <div>
+            <div className="muted text-xs">Next deadline</div>
+            <div className="flex items-baseline gap-2"><span className={`text-4xl font-semibold tabular ${mission.next.daysLeft <= 3 ? "text-bad" : mission.next.daysLeft <= 7 ? "text-warn" : ""}`} style={{ fontFamily: "var(--font-display)" }}>{mission.next.daysLeft}</span><span className="text-sm muted">day{mission.next.daysLeft === 1 ? "" : "s"} · {mission.next.title}</span></div>
+          </div>
+        )}
+        {mission.step && <div className="rounded-xl px-3 py-2 text-sm" style={{ background: "linear-gradient(135deg, rgba(139,92,246,.25), rgba(236,72,153,.2))" }}>🎯 Do now: <b>{mission.step}</b></div>}
+      </aside>
       </div>
     </section>
   );
@@ -53,7 +76,7 @@ export default async function StudiesPage() {
         <p className="text-sm">{message}</p>
       </div>
 
-      <NudgeBot nudges={nudges} />
+      <NudgeBot nudges={nudges} mission={{ hoursToday: a.hoursToday, target: a.target, next: a.deadlineStatus.find((d) => d.status !== "Done"), step: a.priorities[0]?.task }} />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <Stat label="Studied this week" value={`${a.week} h`} hint={`target ${a.weekTarget} h (last 7 days)`} tone={a.week >= a.weekTarget ? "good" : a.week >= a.weekTarget * 0.6 ? "warn" : "bad"} />
