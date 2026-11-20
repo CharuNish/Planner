@@ -2,7 +2,7 @@
 import { Area, ComposedChart, Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 const axis = { stroke: "var(--muted)", fontSize: 11, tickLine: false, axisLine: false } as const;
-const tooltipStyle = { background: "var(--card)", border: "1px solid var(--border)", borderRadius: 10, fontSize: 12, color: "var(--fg)" };
+const tooltipStyle = { background: "rgba(13,16,32,.95)", border: "1px solid rgba(139,92,246,.35)", borderRadius: 10, fontSize: 12, color: "var(--fg)", boxShadow: "0 0 20px rgba(139,92,246,.25)" };
 const short = (n: number) => (Math.abs(n) >= 1000 ? `${Math.round(n / 1000)}k` : `${Math.round(n)}`);
 
 export function SpendPaceChart({ data, currency }: { data: { day: number; thisMonth: number | null; lastMonth: number; budget: number }[]; currency: string }) {
@@ -26,13 +26,17 @@ export function IncomeExpenseChart({ data, currency }: { data: { month: string; 
   return (
     <ResponsiveContainer width="100%" height={240}>
       <BarChart data={data} margin={{ left: -10, right: 8, top: 8 }} barGap={2}>
+        <defs>
+          <linearGradient id="bi" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="var(--series-1)" /><stop offset="100%" stopColor="var(--series-1)" stopOpacity={0.35} /></linearGradient>
+          <linearGradient id="be" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="var(--series-2)" /><stop offset="100%" stopColor="var(--series-2)" stopOpacity={0.35} /></linearGradient>
+        </defs>
         <CartesianGrid stroke="var(--grid)" vertical={false} />
         <XAxis dataKey="month" {...axis} />
         <YAxis {...axis} tickFormatter={short} />
-        <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "var(--accent-soft)" }} formatter={(v) => `${currency} ${Math.round(Number(v)).toLocaleString()}`} />
+        <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "rgba(139,92,246,.08)" }} formatter={(v) => `${currency} ${Math.round(Number(v)).toLocaleString()}`} />
         <Legend wrapperStyle={{ fontSize: 12 }} />
-        <Bar isAnimationActive={false} name="Income" dataKey="income" fill="var(--series-1)" radius={[4, 4, 0, 0]} maxBarSize={22} />
-        <Bar isAnimationActive={false} name="Expenses" dataKey="expense" fill="var(--series-2)" radius={[4, 4, 0, 0]} maxBarSize={22} />
+        <Bar isAnimationActive={false} name="Income" dataKey="income" fill="url(#bi)" radius={[4, 4, 0, 0]} maxBarSize={22} />
+        <Bar isAnimationActive={false} name="Expenses" dataKey="expense" fill="url(#be)" radius={[4, 4, 0, 0]} maxBarSize={22} />
       </BarChart>
     </ResponsiveContainer>
   );

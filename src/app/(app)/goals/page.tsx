@@ -1,4 +1,6 @@
+import { TravelGlobe } from "@/components/globe";
 import { SafeImg } from "@/components/img";
+import { placeIn } from "@/lib/places";
 import { DemoBanner, Empty, PageHeader, ProgressBar } from "@/components/ui";
 import { config } from "@/lib/config";
 import { daysBetween, prettyDate, todayISO } from "@/lib/dates";
@@ -19,12 +21,32 @@ export default async function GoalsPage() {
   const groups = new Map<string, typeof withImages>();
   for (const g of withImages) { const k = CAT[g.category.toLowerCase()] ? g.category.toLowerCase() : "other"; groups.set(k, [...(groups.get(k) || []), g]); }
   const done = goals.filter((g) => /done|achiev|complete/i.test(g.status)).length;
+  const travel = goals.map((g) => ({ g, place: placeIn(`${g.goal} ${g.notes}`) })).filter((x) => x.place && x.g.category.toLowerCase() === "travel") as { g: (typeof goals)[number]; place: NonNullable<ReturnType<typeof placeIn>> }[];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 rise">
       <PageHeader title="🎯 Mini goals" subtitle={`${goals.length} goals · ${done} achieved 🏆`} />
       {demo && <DemoBanner what="Life sheet" />}
       {!goals.length && <Empty>Add goals to the Goals tab of your Life sheet.</Empty>}
+      {travel.length > 0 && (
+        <section className="card p-5 md:p-6 grid md:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] gap-6 items-center overflow-hidden">
+          <div className="max-w-[440px] w-full mx-auto"><TravelGlobe markers={travel.map((t) => ({ coords: t.place.coords, label: t.g.goal }))} /></div>
+          <div>
+            <div className="kicker">travel map</div>
+            <h2 className="text-xl font-semibold mt-1">✈️ {travel.length} place{travel.length === 1 ? "" : "s"} on your list</h2>
+            <ul className="mt-4 space-y-2">
+              {travel.map(({ g, place }) => (
+                <li key={g.goal} className="flex items-center gap-3 text-sm">
+                  <span className="w-2 h-2 rounded-full shrink-0" style={{ background: "#22d3ee", boxShadow: "0 0 8px #22d3ee" }} />
+                  <span className="flex-1">{g.goal}</span>
+                  <span className="muted text-xs capitalize">{place.name}{/done|achiev|complete/i.test(g.status) ? " · visited 🏆" : ""}</span>
+                </li>
+              ))}
+            </ul>
+            <p className="text-xs muted mt-4">Drag the globe to spin it. A place shows up when its name is in the goal (e.g. “Visit Japan”).</p>
+          </div>
+        </section>
+      )}
       {[...groups.entries()].map(([k, gs]) => (
         <section key={k}>
           <h2 className="font-semibold mb-3">{CAT[k].icon} {CAT[k].title}</h2>

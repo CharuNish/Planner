@@ -41,7 +41,7 @@ async function Found({ type }: { type: string }) {
       {items.map((o, i) => {
         const days = o.deadline ? daysBetween(today, o.deadline) : null;
         return (
-          <article key={i} className="rounded-xl p-4" style={{ background: "var(--bg)" }}>
+          <article key={i} className="rounded-xl p-4" data-tile="">
             <div className="flex flex-wrap justify-between gap-2">
               <div className="min-w-0">
                 <div className="text-xs muted flex flex-wrap gap-2"><span className="chip soft">{o.type}</span>{o.org && <span>{o.org}</span>}{o.country && <span>· {o.country}</span>}</div>

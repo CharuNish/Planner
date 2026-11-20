@@ -18,7 +18,7 @@ async function Repos() {
   return (
     <ol className="grid md:grid-cols-2 gap-3">
       {r.data.map((x, i) => (
-        <li key={x.name} className="rounded-xl p-4 flex gap-3" style={{ background: "var(--bg)" }}>
+        <li key={x.name} className="rounded-xl p-4 flex gap-3" data-tile="">
           <span className="text-lg font-semibold muted tabular w-6 shrink-0">{i + 1}</span>
           <div className="min-w-0">
             <a href={x.url} target="_blank" rel="noreferrer" className="font-medium hover:underline break-all">{x.name}</a>

@@ -7,6 +7,8 @@ import { addDays, daysBetween, prettyDate, relativeDays, todayISO } from "@/lib/
 import { analyseFinance, fmt, loadFinance, upcomingBills } from "@/lib/finance";
 import { quoteOfTheDay } from "@/lib/quotes";
 import { analyseStudies, loadStudies } from "@/lib/studies";
+import { CountUp, Ring } from "@/components/fx";
+import { analyseHabits, analyseWeight, loadHabits, loadWeight } from "@/lib/life";
 
 export const dynamic = "force-dynamic";
 
@@ -17,11 +19,15 @@ function greeting() {
 
 export default async function Home() {
   const today = todayISO();
-  const [fin, stu, cal] = await Promise.all([
+  const [fin, stu, cal, hab, wt] = await Promise.all([
     loadFinance().catch((e) => ({ error: String(e) })),
     loadStudies().catch((e) => ({ error: String(e) })),
     loadEvents(14).catch((e) => ({ demo: false, events: [], error: String(e) })),
+    loadHabits().catch(() => null),
+    loadWeight().catch(() => null),
   ]);
+  const h = hab ? analyseHabits(hab.days) : null;
+  const w = wt ? analyseWeight(wt.entries) : null;
   const f = "txns" in fin ? analyseFinance(fin.txns, fin.budgets) : null;
   const bills = "bills" in fin ? upcomingBills(fin.bills, 7) : [];
   const s = "tasks" in stu ? analyseStudies(stu.deadlines, stu.tasks, stu.log, stu.targets) : null;
@@ -31,21 +37,41 @@ export default async function Home() {
   const anyDemo = ("demo" in fin && fin.demo) || ("demo" in stu && stu.demo) || cal.demo;
 
   return (
-    <div className="space-y-5">
-      <header>
-        <p className="muted text-sm">{prettyDate(today, { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</p>
-        <h1 className="text-2xl md:text-3xl font-semibold tracking-tight mt-1">{greeting()}, {config.ownerName} ✨</h1>
-        <p className="mt-2 text-sm italic muted">“{quoteOfTheDay(today)}”</p>
-      </header>
+    <div className="space-y-5 rise">
+      <section className="card p-6 md:p-8 relative overflow-hidden">
+        <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(600px 240px at 0% 0%, rgba(139,92,246,.25), transparent 70%), radial-gradient(500px 240px at 100% 100%, rgba(34,211,238,.15), transparent 70%)" }} />
+        <div className="relative grid lg:grid-cols-[1.1fr_1fr] gap-8 items-center">
+          <div>
+            <div className="kicker">{prettyDate(today, { weekday: "long", day: "numeric", month: "long", year: "numeric" })} · system online <span className="inline-block w-1.5 h-1.5 rounded-full bg-[var(--good)] align-middle animate-pulse" /></div>
+            <h1 className="text-3xl md:text-5xl font-semibold tracking-tight mt-3 leading-tight">{greeting()},<br /><span className="gradient-text glow-text">{config.ownerName}</span> ✦</h1>
+            <p className="mt-4 text-sm muted italic max-w-md">“{quoteOfTheDay(today)}”</p>
+            <div className="mt-5 flex flex-wrap gap-2 text-xs">
+              <span className="chip soft">📅 {todays.length} event{todays.length === 1 ? "" : "s"} today</span>
+              {nextDeadline && <span className="chip soft">⏳ {nextDeadline.title}: {relativeDays(nextDeadline.daysLeft)}</span>}
+              {bills.length > 0 && <span className="chip soft">🧾 {bills.length} bill{bills.length === 1 ? "" : "s"} this week</span>}
+            </div>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4 gap-4 justify-items-center">
+            <Ring value={f && f.totalBudget ? Math.max(0, f.budgetLeft) / f.totalBudget : 0} tone={f && f.budgetLeft / Math.max(f.totalBudget, 1) < 1 - f.dom / f.dim - 0.1 ? "warn" : "accent"} size={104} label="Budget left" sub={f ? `day ${f.dom}/${f.dim}` : ""} />
+            <Ring value={s && s.target ? s.hoursToday / s.target : 0} tone="good" size={104} label="Study today" sub={s ? `goal ${s.target} h` : ""}>
+              <span className="text-lg font-semibold tabular">{s ? s.hoursToday : 0}<span className="text-xs muted">h</span></span>
+            </Ring>
+            <Ring value={h?.today ? ((h.today.sleep ? Math.min(1, h.today.sleep / config.sleepTarget) : 0) + (h.today.water ? Math.min(1, h.today.water / config.waterTarget) : 0) + (h.today.gym ? 1 : 0)) / 3 : 0} tone="accent" size={104} label="Habits today" sub={h ? `${h.sleepStreak}d sleep streak` : ""} />
+            <Ring value={w && w.goal && w.start.kg > w.goal ? (w.start.kg - w.current.kg) / (w.start.kg - w.goal) : w ? Math.min(1, Math.max(0, w.lost) / 5) : 0} tone="good" size={104} label="Weight goal" sub={w ? `${w.current.kg} kg now` : ""}>
+              <span className="text-lg font-semibold tabular">{w ? (w.lost > 0 ? `-${w.lost}` : "0") : "–"}<span className="text-xs muted">kg</span></span>
+            </Ring>
+          </div>
+        </div>
+      </section>
       {anyDemo && <div className="rounded-xl px-4 py-3 text-sm soft">👀 Some tabs show <b>sample data</b> until your Google Sheets and Calendar are connected (see SETUP.md).</div>}
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <Stat label="Budget left this month" value={f ? fmt(f.budgetLeft) : "—"} tone={f && f.budgetLeft < 0 ? "bad" : undefined}
+        <Stat label="Budget left" value={f ? <CountUp value={Math.round(f.budgetLeft)} prefix={`${config.currency} `} /> : "—"} tone={f && f.budgetLeft < 0 ? "bad" : undefined}
           hint={f ? `about ${fmt(f.perDayAllowance)} a day for ${f.dim - f.dom + 1} days` : "error loading"} />
-        <Stat label="Spent today" value={f ? fmt(f.spentToday) : "—"} hint={f ? `${fmt(f.expense)} so far this month` : ""} />
+        <Stat label="Spent today" value={f ? <CountUp value={Math.round(f.spentToday)} prefix={`${config.currency} `} /> : "—"} hint={f ? `${fmt(f.expense)} so far this month` : ""} />
         <Stat label="Next deadline" value={nextDeadline ? relativeDays(nextDeadline.daysLeft) : "None 🎉"}
           hint={nextDeadline ? nextDeadline.title : "nothing coming up"} tone={nextDeadline && nextDeadline.daysLeft <= 3 ? "warn" : undefined} />
-        <Stat label="Studied today" value={s ? `${s.hoursToday} h` : "—"} hint={s ? `goal today ${s.target} h · streak ${s.streak} day${s.streak === 1 ? "" : "s"}` : ""} />
+        <Stat label="Studied today" value={s ? <CountUp value={s.hoursToday} decimals={1} suffix=" h" /> : "—"} hint={s ? `goal today ${s.target} h · streak ${s.streak} day${s.streak === 1 ? "" : "s"}` : ""} />
       </div>
 
       <div className="grid lg:grid-cols-3 gap-5">
@@ -98,7 +124,7 @@ export default async function Home() {
                 <div className="text-xs muted mt-1">{Math.round((f.dom / f.dim) * 100)}% of the month has passed</div>
               </div>
               {f.focus[0] ? <p>💡 Go easy on <b>{f.focus[0].category}</b>: {f.focus[0].reasons[0]}.</p> : <p>✅ Every category is within budget. Nice!</p>}
-              {f.anomalies.length > 0 && <p className="text-warn">⚠️ {f.anomalies.length} thing{f.anomalies.length > 1 ? "s" : ""} look unusual. <Link href="/finance#anomalies" className="underline">Check</Link></p>}
+              {f.anomalies.length > 0 && <p className="text-warn">⚠️ {f.anomalies.length} thing{f.anomalies.length > 1 ? "s look" : " looks"} unusual. <Link href="/finance#anomalies" className="underline">Check</Link></p>}
             </div>
           ) : <Empty>Couldn&apos;t load finance data.</Empty>}
         </Section>

@@ -42,7 +42,7 @@ export default async function StudiesPage() {
         {a.deadlineStatus.length ? (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {a.deadlineStatus.map((d) => (
-              <div key={d.title} className="rounded-xl p-4" style={{ background: "var(--bg)" }}>
+              <div key={d.title} className="rounded-xl p-4" data-tile="">
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <div className="text-xs muted">{d.type} · {d.subject}</div>
