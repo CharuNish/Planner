@@ -22,10 +22,12 @@ async function pickModel(mode: "text" | "search"): Promise<string> {
   const names = (data.models || [])
     .filter((m) => m.supportedGenerationMethods?.includes("generateContent"))
     .map((m) => m.name.replace(/^models\//, ""))
-    .filter((n) => /^gemini-[\d.]+-flash/.test(n) && !/lite|image|tts|audio|live|thinking|embedding|8b/.test(n) && !retired[mode].has(n));
+    // Web search is allowed to fall back to the "lite" models too: their free search allowance is separate.
+    .filter((n) => /^gemini-[\d.]+-flash/.test(n) && !(mode === "text" ? /lite|image|tts|audio|live|thinking|embedding|8b/ : /image|tts|audio|live|thinking|embedding|8b/).test(n) && !retired[mode].has(n));
   const version = (n: string) => parseFloat(n.match(/^gemini-([\d.]+)/)?.[1] || "0");
   const unstable = (n: string) => (/preview|exp/.test(n) ? 1 : 0);
-  names.sort((a, b) => unstable(a) - unstable(b) || version(b) - version(a) || a.length - b.length);
+  const lite = (n: string) => (/lite/.test(n) ? 1 : 0);
+  names.sort((a, b) => lite(a) - lite(b) || unstable(a) - unstable(b) || version(b) - version(a) || a.length - b.length);
   if (!names.length) throw new Error(`No free Gemini model available for ${mode === "search" ? "web search" : "summaries"} with this key`);
   chosen[mode] = names[0];
   return names[0];
@@ -45,11 +47,14 @@ export async function gemini(prompt: string, opts: GeminiOpts = {}): Promise<{ t
   const mode = opts.search ? "search" : "text";
   let model = await pickModel(mode);
   let res = await call(model);
-  for (let i = 0; i < 4 && !res.ok && !process.env.GEMINI_MODEL; i++) {
+  const tries = mode === "search" ? 8 : 4;
+  for (let i = 0; i < tries && !res.ok && !process.env.GEMINI_MODEL; i++) {
     const errText = await res.clone().text();
     // 404 = retired model; 429 with "limit: 0" = no free allowance; 429 "PerDay" = this model's daily free allowance is used up.
     // Free allowances are per model, so in all these cases another model may still work.
-    const notFree = res.status === 404 || (res.status === 429 && /limit:\s*0\b|PerDay/i.test(errText));
+    // Web search ("grounding") has its own, much smaller free allowance that Google often reports with only a bare
+    // "exceeded your current quota" message, so for search ANY 429 means: move on to the next model.
+    const notFree = res.status === 404 || (res.status === 429 && (mode === "search" || /limit:\s*0\b|PerDay/i.test(errText)));
     if (notFree) {
       // This model isn't available (or has no free allowance) for this key: try the next newest one.
       retired[mode].add(model); chosen[mode] = null;
