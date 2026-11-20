@@ -1,5 +1,5 @@
 "use server";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { calendarIsDemo, config, financeIsDemo, lifeIsDemo, studiesIsDemo } from "@/lib/config";
 import { addDays, todayISO } from "@/lib/dates";
 import { appendRow, insertEvent } from "@/lib/google";
@@ -106,4 +106,13 @@ export async function saveOpportunity(_: Result, f: FormData): Promise<Result> {
   } catch (e) { return { error: String(e) }; }
   revalidatePath("/opportunities");
   return { ok: f.get("calendar") && deadline ? "Saved, and the deadline is in your calendar ✓" : "Saved ✓" };
+}
+
+// "Try again" for a daily feed that failed (forces one fresh attempt).
+const RETRYABLE = ["github-trending", "papers", "medium", "youtube", "opportunities"];
+export async function retryDaily(f: FormData) {
+  const key = String(f.get("key") || "");
+  if (!RETRYABLE.includes(key)) return;
+  revalidateTag(`daily-${key}`);
+  revalidatePath("/updates"); revalidatePath("/opportunities");
 }

@@ -15,14 +15,10 @@ const NOT_WANTED = /\b(intern(ship)?s?|trainee|placement|volunteer)\b/i;
 
 type Search = { type: Opportunity["type"]; ask: string; where: string };
 const ROLES = "Research Assistant, Research Engineer or AI Engineer JOBS (full-time or contract; NOT internships)";
+// Few, bigger searches (Gemini's free tier allows only a handful of web searches per minute).
 const SEARCHES: Search[] = [
-  { type: "Job", ask: ROLES, where: "at NUS (careers.nus.edu.sg), NTU Singapore (ntu.edu.sg careers) and SUTD (sutd.edu.sg careers). Check each university's official career/jobs pages" },
-  { type: "Job", ask: ROLES, where: "at EPFL (epfl.ch careers), ETH Zurich (jobs.ethz.ch) and INSAIT in Sofia (insait.ai careers). Check each institute's official career/jobs pages" },
-  { type: "Job", ask: ROLES, where: "at MBZUAI, Mohamed bin Zayed University of Artificial Intelligence in Abu Dhabi (mbzuai.ac.ae careers)" },
-  { type: "Job", ask: ROLES, where: "posted on LinkedIn Jobs (linkedin.com/jobs/view links)" },
-  { type: "Job", ask: ROLES, where: `at other universities, research labs and companies ${INTERESTS.opportunityRegions} (official career pages, jobs.ac.uk, EURAXESS, etc.)` },
-  { type: "PhD", ask: "fully funded PhD positions / studentships", where: `${INTERESTS.opportunityRegions}, especially NUS, NTU, SUTD, MBZUAI, EPFL, ETH Zurich and INSAIT. Use official university pages, FindAPhD, EURAXESS and LinkedIn posts` },
-  { type: "MSc", ask: "Master's (MSc) programmes and scholarships currently accepting applications", where: `${INTERESTS.opportunityRegions}, especially NUS, NTU, SUTD, MBZUAI, EPFL, ETH Zurich and INSAIT. Use official pages and LinkedIn posts` },
+  { type: "Job", ask: ROLES, where: "at NUS (careers.nus.edu.sg), NTU Singapore, SUTD, MBZUAI (Abu Dhabi), EPFL, ETH Zurich (jobs.ethz.ch) and INSAIT (Sofia), from each institution's official career/jobs pages, and on LinkedIn Jobs (linkedin.com/jobs/view)" },
+  { type: "PhD", ask: "fully funded PhD positions AND Master's (MSc) programmes/scholarships accepting applications (set the title to start with 'PhD:' or 'MSc:')", where: `${INTERESTS.opportunityRegions}, especially NUS, NTU, SUTD, MBZUAI, EPFL, ETH Zurich and INSAIT. Use official university pages, FindAPhD, EURAXESS and LinkedIn posts` },
   { type: "School", ask: "summer schools, winter schools and short research programmes (including ones for students)", where: INTERESTS.opportunityRegions },
 ];
 
@@ -38,13 +34,14 @@ async function searchKind(kind: Search): Promise<Opportunity[]> {
   const today = todayISO();
   const { data, sources } = await geminiJSON<{ title: string; org: string; country: string; deadline: string | null; url: string; summary: string }[]>(
     `Today is ${today}. Search the web for currently OPEN ${kind.ask} in ${INTERESTS.opportunityFields}, ${kind.where}.\n` +
-    `Only include ones still open (application deadline after ${today}, or no deadline but posted recently). Find up to 8. Use the real link to the posting.\n` +
+    `Only include ones still open (application deadline after ${today}, or no deadline but posted recently). Find up to 12. Use the real link to the posting.\n` +
     `Answer ONLY with a JSON array: [{"title": "...", "org": "university or company", "country": "...", "deadline": "YYYY-MM-DD or null", "url": "link to the posting", "summary": "one friendly sentence on what it is and who it suits"}]`,
     { search: true, temperature: 0.2 });
   const fallbackUrl = sources[0]?.uri || "";
   return (Array.isArray(data) ? data : []).filter((o) => o && o.title).map((o) => {
     const url = /^https?:\/\//.test(o.url || "") ? o.url : fallbackUrl;
-    return { title: o.title, org: o.org || "", type: kind.type, country: o.country || "", deadline: parseDate(o.deadline) || null, url, summary: o.summary || "", source: sourceOf(url) };
+    const type: Opportunity["type"] = kind.type === "PhD" && /^\s*(msc|master)/i.test(o.title) ? "MSc" : kind.type;
+    return { title: o.title.replace(/^\s*(PhD|MSc)\s*:\s*/i, ""), org: o.org || "", type, country: o.country || "", deadline: parseDate(o.deadline) || null, url, summary: o.summary || "", source: sourceOf(url) };
   }).filter((o) => (!o.deadline || o.deadline >= today) && !NOT_WANTED.test(o.title) && (o.type !== "Job" || JOB_TITLES.test(o.title)));
 }
 
@@ -64,7 +61,15 @@ async function remoteJobs(): Promise<Opportunity[]> {
 }
 
 async function allOpportunities() {
-  const results = await Promise.allSettled([...(hasGemini() ? SEARCHES.map(searchKind) : []), remoteJobs()]);
+  const results: PromiseSettledResult<Opportunity[]>[] = [];
+  const remote = Promise.allSettled([remoteJobs()]);
+  if (hasGemini()) {
+    for (const [i, k] of SEARCHES.entries()) {
+      if (i) await new Promise((r) => setTimeout(r, 4000));
+      results.push(...(await Promise.allSettled([searchKind(k)])));
+    }
+  }
+  results.push(...(await remote));
   const items = results.flatMap((r) => (r.status === "fulfilled" ? r.value : []));
   const errors = results.filter((r) => r.status === "rejected").map((r) => String((r as PromiseRejectedResult).reason).slice(0, 160));
   if (!items.length) throw new Error(hasGemini() ? `Nothing found right now. ${errors[0] || ""}` : "Add a GEMINI_API_KEY to search for PhDs, MSc programmes and schools (see SETUP.md).");
@@ -74,4 +79,4 @@ async function allOpportunities() {
   return { items: unique, errors, refreshed: new Date().toISOString() };
 }
 
-export const getOpportunities = daily("opportunities-v4", allOpportunities);
+export const getOpportunities = daily("opportunities", allOpportunities);

@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { SaveOppButton } from "@/components/forms2";
+import { FeedError } from "@/components/retry";
 import { Empty, PageHeader, Section } from "@/components/ui";
 import { daysBetween, prettyDate, relativeDays, todayISO } from "@/lib/dates";
 import { settle } from "@/lib/fetchx";
@@ -31,7 +32,7 @@ const TYPES: { key: Opportunity["type"] | "All"; label: string }[] = [
 
 async function Found({ type }: { type: string }) {
   const r = await settle(getOpportunities());
-  if (!r.ok) return <p className="text-sm text-bad">{r.error.slice(0, 300)}</p>;
+  if (!r.ok) return <FeedError msg={r.error} retryKey="opportunities" />;
   const today = todayISO();
   const items = r.data.items.filter((o) => type === "All" || o.type === type);
   if (!items.length) return <Empty>Nothing in this category today. Check back tomorrow!</Empty>;

@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { SafeImg } from "@/components/img";
+import { FeedError } from "@/components/retry";
 import { PageHeader, Section } from "@/components/ui";
 import { prettyDate, todayISO } from "@/lib/dates";
 import { settle } from "@/lib/fetchx";
@@ -9,12 +10,11 @@ import { getMedium, getPapers, getTrending, getVideos } from "@/lib/updates";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-const Err = ({ msg }: { msg: string }) => <p className="text-sm text-bad">Couldn&apos;t load this right now: {msg.slice(0, 220)}</p>;
 const Loading = ({ what }: { what: string }) => <p className="text-sm muted animate-pulse">Fetching {what}… (the first visit of the day takes a few seconds)</p>;
 
 async function Repos() {
   const r = await settle(getTrending());
-  if (!r.ok) return <Err msg={r.error} />;
+  if (!r.ok) return <FeedError msg={r.error} retryKey="github-trending" />;
   return (
     <ol className="grid md:grid-cols-2 gap-3">
       {r.data.map((x, i) => (
@@ -33,7 +33,7 @@ async function Repos() {
 
 async function Papers() {
   const r = await settle(getPapers());
-  if (!r.ok) return <Err msg={r.error} />;
+  if (!r.ok) return <FeedError msg={r.error} retryKey="papers" />;
   return (
     <div className="space-y-4">
       {r.data.map((p) => (
@@ -51,7 +51,7 @@ async function Papers() {
 
 async function Medium() {
   const r = await settle(getMedium());
-  if (!r.ok) return <Err msg={r.error} />;
+  if (!r.ok) return <FeedError msg={r.error} retryKey="medium" />;
   return (
     <div className="space-y-3">
       {r.data.map((a) => (
@@ -70,7 +70,7 @@ async function Medium() {
 
 async function Videos() {
   const r = await settle(getVideos());
-  if (!r.ok) return <Err msg={r.error} />;
+  if (!r.ok) return <FeedError msg={r.error} retryKey="youtube" />;
   return (
     <div className="grid sm:grid-cols-3 gap-4">
       {r.data.map((v) => (
@@ -88,7 +88,7 @@ async function Videos() {
 export default function UpdatesPage() {
   return (
     <div className="space-y-5">
-      <PageHeader title="📰 Updates" subtitle={`Fresh picks for ${prettyDate(todayISO(), { weekday: "long", day: "numeric", month: "long" })}. Refreshed every morning.`} />
+      <PageHeader title="📰 Updates" subtitle={`Fresh picks for ${prettyDate(todayISO(), { weekday: "long", day: "numeric", month: "long" })}. Refreshed once a day, every morning.`} />
       {!hasGemini() && <div className="rounded-xl px-4 py-3 text-sm soft">✨ Add a free <b>GEMINI_API_KEY</b> to get plain-English summaries and smarter picks (see SETUP.md).</div>}
       <Section title="🔥 Trending on GitHub today"><Suspense fallback={<Loading what="trending repos" />}><Repos /></Suspense></Section>
       <div className="grid lg:grid-cols-5 gap-5">

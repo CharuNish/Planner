@@ -4,12 +4,17 @@ import { config } from "@/lib/config";
 import { addDays, daysBetween, todayISO } from "@/lib/dates";
 import { analyseFinance, fmt, loadFinance, upcomingBills } from "@/lib/finance";
 import { analyseStudies, loadStudies } from "@/lib/studies";
+import { getOpportunities } from "@/lib/opportunities";
+
+export const maxDuration = 60;
 
 // Runs every morning (see vercel.json) and sends you a Telegram message.
 export async function GET(req: Request) {
   if (config.cronSecret && req.headers.get("authorization") !== `Bearer ${config.cronSecret}`) {
     return NextResponse.json({ error: "unauthorised" }, { status: 401 });
   }
+  // Fetch today's opportunities now so the tab loads instantly (once a day).
+  await getOpportunities().catch(() => null);
   if (!config.telegram.botToken || !config.telegram.chatId) return NextResponse.json({ skipped: "Telegram not set up" });
 
   const today = todayISO();

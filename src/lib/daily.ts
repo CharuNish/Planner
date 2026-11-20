@@ -1,11 +1,24 @@
 import { unstable_cache } from "next/cache";
 import { todayISO } from "./dates";
 
+type Outcome<T> = { ok: true; data: T; at: string } | { ok: false; error: string; at: string };
+
 /**
- * Runs `fn` at most once per day and remembers the result (Vercel's free data cache).
- * If `fn` throws, nothing is saved, so the next visit tries again.
+ * Runs `fn` at most ONCE per day and remembers the result (Vercel's free data cache).
+ * Errors are remembered too, so a failure doesn't burn your free quota on every visit.
+ * Use the "Try again" button (retryDaily) to force a new attempt.
  */
 export function daily<T>(key: string, fn: () => Promise<T>) {
-  const cached = unstable_cache(async (day: string) => { void day; return fn(); }, [key, "v1"], { revalidate: 60 * 60 * 26, tags: ["daily"] });
-  return () => cached(todayISO());
+  const cached = unstable_cache(
+    async (day: string): Promise<Outcome<T>> => {
+      void day;
+      try { return { ok: true, data: await fn(), at: new Date().toISOString() }; }
+      catch (e) { return { ok: false, error: e instanceof Error ? e.message : String(e), at: new Date().toISOString() }; }
+    },
+    [key, "v2"], { revalidate: 60 * 60 * 26, tags: ["daily", `daily-${key}`] });
+  return async () => {
+    const r = await cached(todayISO());
+    if (!r.ok) throw new Error(r.error);
+    return r.data;
+  };
 }

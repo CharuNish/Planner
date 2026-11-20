@@ -172,7 +172,7 @@ async function youtubePicks(): Promise<Video[]> {
   return found.sort((a, b) => b.views - a.views).filter((v) => !seen.has(v.topic) && seen.add(v.topic)).slice(0, 3);
 }
 
-export const getTrending = daily("github-trending-v2", trendingRepos);
-export const getPapers = daily("papers-v2", topPapers);
-export const getMedium = daily("medium-v3", mediumPicks);
-export const getVideos = daily("youtube-v3", youtubePicks);
+export const getTrending = daily("github-trending", trendingRepos);
+export const getPapers = daily("papers", topPapers);
+export const getMedium = daily("medium", mediumPicks);
+export const getVideos = daily("youtube", youtubePicks);
