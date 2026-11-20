@@ -34,6 +34,8 @@ async function Found({ type }: { type: string }) {
   if (!items.length) return <Empty>Nothing in this category today. Check back tomorrow!</Empty>;
   return (
     <div className="space-y-3">
+      {!r.data.staleFrom && r.data.errors.length > 0 && <p className="text-sm rounded-xl px-4 py-2 soft">💤 Today&apos;s web search for PhDs, MSc and schools hit Gemini&apos;s free limit, so only remote jobs are showing. It tries again tomorrow morning.</p>}
+      {r.data.staleFrom && <p className="text-sm rounded-xl px-4 py-2 soft">💤 Gemini&apos;s free search limit ran out today, so you&apos;re seeing the list from {prettyDate(r.data.staleFrom)}. Fresh results tomorrow morning.</p>}
       {items.map((o, i) => {
         const days = o.deadline ? daysBetween(today, o.deadline) : null;
         return (
@@ -55,7 +57,7 @@ async function Found({ type }: { type: string }) {
           </article>
         );
       })}
-      <p className="text-xs muted">Found {prettyDate(r.data.refreshed.slice(0, 10))}. AI search results can be out of date, so always check the official page before applying.</p>
+      <p className="text-xs muted">{r.data.staleFrom ? <>Today&apos;s search hit Gemini&apos;s free limit, so this is your list from {prettyDate(r.data.staleFrom)} (still-open ones only). It tries again tomorrow morning.</> : <>Found {prettyDate(r.data.refreshed.slice(0, 10))}.</>} AI search results can be out of date, so always check the official page before applying.</p>
     </div>
   );
 }
