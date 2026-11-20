@@ -10,24 +10,25 @@ type GeminiOpts = { search?: boolean; temperature?: number };
  * which models this key can use and pick the newest stable "flash" model (fast and free).
  * Set GEMINI_MODEL in Vercel to force a specific one.
  */
-let chosenModel: string | null = null;
-const retired = new Set<string>(); // models that answered "not available" for this key
-async function pickModel(): Promise<string> {
+// Remembered separately for plain text and for web search, since a model can be free for one but not the other.
+const chosen: Record<"text" | "search", string | null> = { text: null, search: null };
+const retired: Record<"text" | "search", Set<string>> = { text: new Set(), search: new Set() };
+async function pickModel(mode: "text" | "search"): Promise<string> {
   if (process.env.GEMINI_MODEL) return process.env.GEMINI_MODEL;
-  if (chosenModel) return chosenModel;
+  if (chosen[mode]) return chosen[mode]!;
   const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?pageSize=200&key=${config.geminiKey}`, { cache: "no-store", signal: AbortSignal.timeout(15000) });
   if (!res.ok) throw new Error(`Gemini model list ${res.status}: ${(await res.text()).slice(0, 160)}`);
   const data = await res.json() as { models?: { name: string; supportedGenerationMethods?: string[] }[] };
   const names = (data.models || [])
     .filter((m) => m.supportedGenerationMethods?.includes("generateContent"))
     .map((m) => m.name.replace(/^models\//, ""))
-    .filter((n) => /^gemini-[\d.]+-flash/.test(n) && !/lite|image|tts|audio|live|thinking|embedding|8b/.test(n) && !retired.has(n));
+    .filter((n) => /^gemini-[\d.]+-flash/.test(n) && !/lite|image|tts|audio|live|thinking|embedding|8b/.test(n) && !retired[mode].has(n));
   const version = (n: string) => parseFloat(n.match(/^gemini-([\d.]+)/)?.[1] || "0");
   const unstable = (n: string) => (/preview|exp/.test(n) ? 1 : 0);
   names.sort((a, b) => unstable(a) - unstable(b) || version(b) - version(a) || a.length - b.length);
-  if (!names.length) throw new Error("No Gemini flash model available for this key");
-  chosenModel = names[0];
-  return chosenModel;
+  if (!names.length) throw new Error(`No free Gemini model available for ${mode === "search" ? "web search" : "summaries"} with this key`);
+  chosen[mode] = names[0];
+  return names[0];
 }
 
 export async function gemini(prompt: string, opts: GeminiOpts = {}): Promise<{ text: string; sources: { title: string; uri: string }[] }> {
@@ -41,15 +42,32 @@ export async function gemini(prompt: string, opts: GeminiOpts = {}): Promise<{ t
     method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
     signal: AbortSignal.timeout(55000), cache: "no-store",
   });
-  let model = await pickModel();
+  const mode = opts.search ? "search" : "text";
+  let model = await pickModel(mode);
   let res = await call(model);
-  // If Google says a model is retired, try the next newest one (up to 3 times).
-  for (let i = 0; i < 3 && res.status === 404 && !process.env.GEMINI_MODEL; i++) {
-    retired.add(model); chosenModel = null;
-    model = await pickModel();
-    res = await call(model);
+  for (let i = 0; i < 4 && !res.ok && !process.env.GEMINI_MODEL; i++) {
+    const errText = await res.clone().text();
+    // 404 = retired model; 429 with "limit: 0" = no free allowance; 429 "PerDay" = this model's daily free allowance is used up.
+    // Free allowances are per model, so in all these cases another model may still work.
+    const notFree = res.status === 404 || (res.status === 429 && /limit:\s*0\b|PerDay/i.test(errText));
+    if (notFree) {
+      // This model isn't available (or has no free allowance) for this key: try the next newest one.
+      retired[mode].add(model); chosen[mode] = null;
+      model = await pickModel(mode);
+      res = await call(model);
+    } else if (res.status === 429 && i === 0) {
+      // Real "too many requests right now": wait a little once, then retry.
+      const wait = Math.min(20, Number(errText.match(/"retryDelay":\s*"(\d+)/)?.[1] || 10));
+      await new Promise((r) => setTimeout(r, wait * 1000));
+      res = await call(model);
+    } else break;
   }
-  if (!res.ok) throw new Error(`Gemini ${res.status}: ${(await res.text()).slice(0, 200)}`);
+  if (!res.ok) {
+    const t = await res.text();
+    const quota = t.match(/"quotaId":\s*"([^"]+)"/)?.[1];
+    const msg = t.match(/"message":\s*"([^"]{0,160})/)?.[1] || t.slice(0, 160);
+    throw new Error(`Gemini ${res.status} (${model}${quota ? `, ${quota}` : ""}): ${msg}`);
+  }
   const data = await res.json();
   const cand = data.candidates?.[0];
   const text = (cand?.content?.parts || []).map((p: { text?: string }) => p.text || "").join("");

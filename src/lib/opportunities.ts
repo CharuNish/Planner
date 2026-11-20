@@ -79,4 +79,4 @@ async function allOpportunities() {
   return { items: unique, errors, refreshed: new Date().toISOString() };
 }
 
-export const getOpportunities = daily("opportunities", allOpportunities);
+export const getOpportunities = daily("opportunities-b", allOpportunities);
