@@ -8,8 +8,8 @@ import { studyNudges } from "@/lib/nudges";
 import { analyseMeasurements, analyseWeight, loadMeasurements, loadWeight } from "@/lib/life";
 import { weightHype } from "@/lib/hype";
 import { getOpportunities } from "@/lib/opportunities";
-import { buildQueue, lastPosted, loadContentSheet, loadQueueFiles } from "@/lib/content";
-import { contentFolderIsDemo, contentIsDemo } from "@/lib/config";
+import { analyseContent, CHANNELS, loadContent } from "@/lib/content";
+import { contentIsDemo } from "@/lib/config";
 
 export const maxDuration = 60;
 
@@ -51,21 +51,17 @@ export async function GET(req: Request) {
     const hype = weightHype(analyseWeight(w.entries), w.entries, analyseMeasurements(ms.entries));
     if (hype[0]) lines.push("", `💖 ${hype[0]}`);
   } catch { /* life sheet not connected */ }
-  if (!contentIsDemo() || !contentFolderIsDemo()) {
+  if (!contentIsDemo()) {
     try {
-      const [q, sheet] = await Promise.all([loadQueueFiles(), loadContentSheet()]);
-      const queue = buildQueue(q.files, sheet.posts);
+      const c = await loadContent();
+      const a = analyseContent(c.followers, c.uploads, c.collabs, today);
       const out: string[] = [];
-      for (const acc of q.accounts) {
-        const next = queue.find((x) => x.channel === acc.channel && x.platform === acc.platform);
-        const left = queue.filter((x) => x.channel === acc.channel && x.platform === acc.platform).length;
-        const since = lastPosted(sheet.posts, acc.channel, acc.platform);
-        if (next) out.push(`• ${acc.channel} ${acc.platform}: "${sheet.captions.get(next.fileId)?.title || next.name}"${since === null ? "" : since === 0 ? " (already posted today)" : ` (last post ${since}d ago)`}${left > 1 ? ` +${left - 1} more` : ""}`);
-        else if (since !== null && since >= 7) out.push(`• ${acc.channel} ${acc.platform}: nothing queued and no post for ${since} days. Add a video!`);
+      for (const ch of CHANNELS) {
+        const n = a.nudges.filter((x) => x.channel === ch);
+        if (n.length) out.push(`• ${ch}: ${n.map((x) => `${x.platform} ${x.daysSince === null ? "(no posts yet)" : `(${x.daysSince} days)`}`).join(", ")}`);
       }
-      if (out.length) lines.push("", `🎬 To post today (${queue.length} left in total):`, ...out);
-      const stats = sheet.posts.filter((p) => !p.views && daysBetween(p.date, today) >= 2 && daysBetween(p.date, today) <= 7 && p.platform !== "YouTube");
-      if (stats.length) lines.push(`📝 Add views/likes for ${stats.length} recent post${stats.length > 1 ? "s" : ""} on the Content tab.`);
+      if (out.length) lines.push("", "🎀 Time to post! It's been over a week on:", ...out);
+      if (a.dueSoon.length) lines.push("", "🤝 Collabs due soon:", ...a.dueSoon.map((x) => `• ${x.brand}: ${x.idea || "video"} (${daysBetween(today, x.due) < 0 ? "overdue" : daysBetween(today, x.due) === 0 ? "today" : `in ${daysBetween(today, x.due)}d`})`));
     } catch { /* content not connected */ }
   }
 

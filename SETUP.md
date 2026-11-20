@@ -169,56 +169,27 @@ The Updates and Opportunities tabs refresh by themselves at **6:00 AM Sri Lanka 
 
 ---
 
-# Stage 4: Content (posting queue, captions, ideas)
+# Stage 4: Content (your social media analytics)
 
-You upload to Instagram / TikTok / YouTube / Facebook yourself, and your videos never leave your phone/laptop. The site keeps a list of what's left to post, writes captions and hashtags, tracks how posts do, and reminds you on Telegram every morning.
+You fill in a spreadsheet; the **Content** tab turns it into follower counts, growth charts, likes and nudges. Nothing is ever posted for you.
 
-## 10. Add the Content tabs to your Life sheet
+## 10. Open the Content tab once
 
-1. Download [`templates/Content-template.xlsx`](templates/Content-template.xlsx).
-2. Open your **Life** Google Sheet → **File → Import → Upload** → pick the file → **Insert new sheet(s)** → **Import data**. You'll get 5 new tabs: **Queue**, **Posts**, **Captions**, **Followers**, **Channels**. (Delete the example row in Queue.)
-3. In the **Channels** tab, describe each channel in a sentence (what it's about, language, who watches). The AI uses this for captions and ideas.
+That's the whole setup. The first time you open **Content**, the site adds three tabs to your Life sheet (or to `CONTENT_SHEET_ID` if you set one), with the headers and dropdowns ready:
 
-That's it. Your videos stay on your phone or laptop. On the Content tab press **+ Add videos to queue**, type the video names (one per line), tick the accounts, and add a short note about what's in it (the note makes the captions much better). You can also type straight into the Queue tab.
+| Tab | One row per… | Columns |
+|---|---|---|
+| **Followers** | account, each time you check (once a week is plenty) | Date, Channel, Platform, Followers |
+| **Uploads** | thing you made | Date, Channel, Title, Type, Where, Instagram/Facebook/TikTok/YouTube Likes, …Views, Link, Notes |
+| **Collabs** | brand deal | Date, Brand, Channel, Platforms, Video idea, Price, Status, Due date, Paid, Contact, Notes |
 
-You never need to type in Posts or Captions yourself: the site fills them when you press **✨ Write caption** and **✓ I posted this**.
+**Uploads:** a Reel, Picture or Carousel counts for every platform of that channel (Life with C: Instagram, TikTok, YouTube; Ane Manda: Instagram, Facebook, TikTok, YouTube). Pick **Long video** as the Type and it counts for YouTube only. Want something else? Type the platforms in **Where** (e.g. `Instagram, TikTok`). Fill in the likes for each platform whenever you check; views are optional.
 
-## 11. Auto-add new videos from your MacBook
+You can also press **💌 Log follower counts** on the Content tab instead of typing in the sheet.
 
-A tiny helper runs quietly on your Mac. Whenever you put a **video**, an **image**, or a **folder of images** (for a carousel post) into an account folder, its **name** is added to your queue within a few minutes. The files themselves never leave your Mac, and deleting them later does **not** remove them from the sheet.
+If you had the older Content tabs (Queue, Posts, Captions, Channels), you can delete them; they aren't used any more.
 
-1. Make sure step 10 is done and the site is redeployed with the latest version.
-2. On your MacBook, download [`mac/install-content-sync.command`](mac/install-content-sync.command) (it lands in **Downloads**).
-3. Open **Terminal** (press ⌘ + Space, type *Terminal*, press Enter), paste this and press Enter:
-   ```
-   bash ~/Downloads/install-content-sync.command
-   ```
-4. Press Enter to keep the website address, then paste your **CRON_SECRET** (the same value as in Vercel; it stays invisible while you paste) and press Enter.
-   Want your folders somewhere else (for example on your Desktop)? Put the folder path in quotes at the end instead:
-   ```
-   bash ~/Downloads/install-content-sync.command "$HOME/Desktop/Social Media"
-   ```
-   (If you use a Desktop or Documents folder, macOS may need you to allow it once: **System Settings → Privacy & Security → Full Disk Access → +**, press **⌘⇧G**, type `/bin/bash`, press **Open**, and switch it on.)
-5. It says **✅ All set!** and opens your new **Content** folder (in your home folder) with one folder per account: `Life with C - Instagram`, `Ane Manda - TikTok`, etc. Drag it to the Finder sidebar for easy access.
-
-**Tips**
-- A carousel = a folder of images inside the account folder. The folder's name is the post name.
-- Add a `note.txt` inside a carousel folder (or a text file with the same name as a video, e.g. `kottu night.txt`) saying what it's about. It goes into the queue and makes the captions much better.
-- Same video for several accounts? Put a copy in each account folder, or add it once on the website and tick all the accounts.
-- Something not showing up? Open Terminal and run `tail ~/Library/Logs/planner-sync.log` to see what happened.
-- To remove the helper: `bash ~/Downloads/install-content-sync.command --uninstall`.
-
-### (Optional) Google Drive folders instead
-
-The website can also read a Google Drive folder with one sub-folder per account (e.g. `Life with C - Instagram`), and then the AI can watch short videos. Share the folder with the robot email (Viewer), enable the [Google Drive API](https://console.cloud.google.com/apis/library/drive.googleapis.com), and add `CONTENT_FOLDER_ID` (the folder link) in Vercel. Skip this if you don't want to upload videos.
-
-## 12. (Optional) Automatic YouTube numbers
-
-| Name | Value |
-|---|---|
-| `YOUTUBE_CHANNELS` | optional, for automatic YouTube subscribers and views, e.g. `Life with C=@yourhandle; Ane Manda=@otherhandle` |
-
-Then **Redeploy**. Instagram, TikTok and Facebook don't give free stats, so log followers on the Content tab once a week (**+ Log follower counts**) and add views/likes on each post when you have a minute. The morning Telegram message tells you what's next in each queue and nudges you when stats are missing.
+**Nudges:** when an account goes 7 days without an upload, the Content tab shows a nudge, and the morning Telegram message reminds you (plus collabs due within a week).
 
 ---
 
@@ -242,5 +213,4 @@ Then **Redeploy**. Instagram, TikTok and Facebook don't give free stats, so log 
 - **"… 404"**: the sheet ID is wrong.
 - **"Unable to parse range"**: a tab name is different from the template (e.g. `Transaction` instead of `Transactions`).
 - **Calendar shows nothing**: check the calendar is shared with the robot and the calendar ID is right.
-- **Content tab says "Google Drive says no access (403)"**: the Content folder isn't shared with the robot, or the Drive API isn't enabled (step 10).
 - **Private key errors**: paste the whole key, including the BEGIN/END lines.
