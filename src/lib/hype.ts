@@ -21,7 +21,7 @@ export function weightHype(a: W | null, entries: WeightEntry[], m: M, date = tod
   const ex = config.exName;
   const lines: string[] = [];
   const always = [
-    "Butch. You got this. 💪",
+    "Bitch. You got this. 💪",
     "Oh youuu super model 📸✨",
     "Main character energy ONLY. 🎬",
     "Hydrate. Slay. Repeat. 💧",
