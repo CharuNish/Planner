@@ -24,7 +24,7 @@ export default async function Home() {
   ]);
   const f = "txns" in fin ? analyseFinance(fin.txns, fin.budgets) : null;
   const bills = "bills" in fin ? upcomingBills(fin.bills, 7) : [];
-  const s = "tasks" in stu ? analyseStudies(stu.deadlines, stu.tasks, stu.log) : null;
+  const s = "tasks" in stu ? analyseStudies(stu.deadlines, stu.tasks, stu.log, stu.targets) : null;
   const todays = cal.events.filter((e) => e.date === today);
   const tomorrow = cal.events.filter((e) => e.date === addDays(today, 1));
   const nextDeadline = s?.deadlineStatus.find((d) => d.status !== "Done");
@@ -45,7 +45,7 @@ export default async function Home() {
         <Stat label="Spent today" value={f ? fmt(f.spentToday) : "—"} hint={f ? `${fmt(f.expense)} so far this month` : ""} />
         <Stat label="Next deadline" value={nextDeadline ? relativeDays(nextDeadline.daysLeft) : "None 🎉"}
           hint={nextDeadline ? nextDeadline.title : "nothing coming up"} tone={nextDeadline && nextDeadline.daysLeft <= 3 ? "warn" : undefined} />
-        <Stat label="Studied today" value={s ? `${s.hoursToday} h` : "—"} hint={s ? `target ${s.target} h · streak ${s.streak} day${s.streak === 1 ? "" : "s"}` : ""} />
+        <Stat label="Studied today" value={s ? `${s.hoursToday} h` : "—"} hint={s ? `goal today ${s.target} h · streak ${s.streak} day${s.streak === 1 ? "" : "s"}` : ""} />
       </div>
 
       <div className="grid lg:grid-cols-3 gap-5">

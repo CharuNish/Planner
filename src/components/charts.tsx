@@ -1,5 +1,5 @@
 "use client";
-import { Area, AreaChart, Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Area, ComposedChart, Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 const axis = { stroke: "var(--muted)", fontSize: 11, tickLine: false, axisLine: false } as const;
 const tooltipStyle = { background: "var(--card)", border: "1px solid var(--border)", borderRadius: 10, fontSize: 12, color: "var(--fg)" };
@@ -38,10 +38,10 @@ export function IncomeExpenseChart({ data, currency }: { data: { month: string; 
   );
 }
 
-export function StudyHoursChart({ data, target }: { data: { label: string; hours: number }[]; target: number }) {
+export function StudyHoursChart({ data }: { data: { label: string; hours: number; target: number }[] }) {
   return (
     <ResponsiveContainer width="100%" height={220}>
-      <AreaChart data={data} margin={{ left: -20, right: 8, top: 8 }}>
+      <ComposedChart data={data} margin={{ left: -20, right: 8, top: 8 }}>
         <defs>
           <linearGradient id="sh" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="var(--series-1)" stopOpacity={0.35} />
@@ -51,10 +51,11 @@ export function StudyHoursChart({ data, target }: { data: { label: string; hours
         <CartesianGrid stroke="var(--grid)" vertical={false} />
         <XAxis dataKey="label" {...axis} interval={4} />
         <YAxis {...axis} allowDecimals={false} />
-        <Tooltip contentStyle={tooltipStyle} formatter={(v) => [`${v} h`, "Studied"]} />
-        <ReferenceLine y={target} stroke="var(--ref)" strokeDasharray="5 4" label={{ value: `target ${target}h`, fill: "var(--muted)", fontSize: 11, position: "insideTopRight" }} />
-        <Area isAnimationActive={false} type="monotone" dataKey="hours" stroke="var(--series-1)" strokeWidth={2} fill="url(#sh)" activeDot={{ r: 4 }} />
-      </AreaChart>
+        <Tooltip contentStyle={tooltipStyle} formatter={(v, name) => [`${v} h`, name]} />
+        <Legend wrapperStyle={{ fontSize: 12 }} />
+        <Line isAnimationActive={false} name="Goal" type="stepAfter" dataKey="target" stroke="var(--ref)" strokeWidth={1.5} strokeDasharray="5 4" dot={false} />
+        <Area isAnimationActive={false} name="Studied" type="monotone" dataKey="hours" stroke="var(--series-1)" strokeWidth={2} fill="url(#sh)" activeDot={{ r: 4 }} />
+      </ComposedChart>
     </ResponsiveContainer>
   );
 }

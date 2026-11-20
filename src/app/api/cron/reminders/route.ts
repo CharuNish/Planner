@@ -30,7 +30,7 @@ export async function GET(req: Request) {
   } catch { /* finance not connected */ }
   try {
     const s = await loadStudies();
-    const a = analyseStudies(s.deadlines, s.tasks, s.log);
+    const a = analyseStudies(s.deadlines, s.tasks, s.log, s.targets);
     const soon = a.deadlineStatus.filter((d) => d.daysLeft <= 7);
     if (soon.length) lines.push("", "📚 Deadlines this week:", ...soon.map((d) => `• ${d.title}: ${d.daysLeft}d (${d.status})`));
     if (a.priorities[0]) lines.push("", `⭐ Study first: ${a.priorities[0].task}`);

@@ -13,7 +13,11 @@ export const config = {
     studiesSheetId: process.env.STUDIES_SHEET_ID || "",
     calendarIds: (process.env.GOOGLE_CALENDAR_IDS || "").split(",").map((s) => s.trim()).filter(Boolean),
   },
-  studyTargetHoursPerDay: Number(process.env.STUDY_TARGET_HOURS || 4),
+  // Either one number for every day ("4"), or 7 numbers for Mon,Tue,Wed,Thu,Fri,Sat,Sun ("2,2,3,2,2,6,6").
+  studyTargetsByWeekday: (() => {
+    const parts = (process.env.STUDY_TARGET_HOURS || "4").split(",").map((x) => Number(x.trim())).filter((n) => !isNaN(n));
+    return parts.length === 7 ? parts : Array(7).fill(parts[0] ?? 4);
+  })(),
   telegram: {
     botToken: process.env.TELEGRAM_BOT_TOKEN || "",
     chatId: process.env.TELEGRAM_CHAT_ID || "",

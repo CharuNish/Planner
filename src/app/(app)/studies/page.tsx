@@ -11,7 +11,7 @@ export default async function StudiesPage() {
   try { data = await loadStudies(); } catch (e) {
     return <div><PageHeader title="📚 Studies & Research" /><div className="card p-5 text-bad text-sm">Couldn&apos;t read your studies sheet: {String(e).slice(0, 300)}</div></div>;
   }
-  const a = analyseStudies(data.deadlines, data.tasks, data.log);
+  const a = analyseStudies(data.deadlines, data.tasks, data.log, data.targets);
   const subjects = [...new Set([...data.tasks.map((t) => t.subject), ...data.log.map((l) => l.subject)].filter(Boolean))];
   const message = a.overall === "On track"
     ? `You're on track! 🎉 At your usual ${a.avg14.toFixed(1)} h/day you can finish everything before each deadline.`
@@ -32,8 +32,8 @@ export default async function StudiesPage() {
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <Stat label="Studied this week" value={`${a.week} h`} hint={`target ${a.target * 7} h`} tone={a.week >= a.target * 7 ? "good" : a.week >= a.target * 4 ? "warn" : "bad"} />
-        <Stat label="Daily average (14 days)" value={`${a.avg14.toFixed(1)} h`} hint={`target ${a.target} h`} />
+        <Stat label="Studied this week" value={`${a.week} h`} hint={`target ${a.weekTarget} h (last 7 days)`} tone={a.week >= a.weekTarget ? "good" : a.week >= a.weekTarget * 0.6 ? "warn" : "bad"} />
+        <Stat label="Daily average (14 days)" value={`${a.avg14.toFixed(1)} h`} hint={`target ${a.avgTarget14.toFixed(1)} h · today's goal ${a.target} h`} />
         <Stat label="Days with no study" value={a.zeroDays} hint={`last 14 days · ${Math.round(a.wastedHours)} h below target`} tone={a.zeroDays > 3 ? "bad" : a.zeroDays > 1 ? "warn" : "good"} />
         <Stat label="Tasks done" value={`${a.done} / ${a.done + a.todo.length}`} hint={`streak: ${a.streak} day${a.streak === 1 ? "" : "s"} in a row`} />
       </div>
@@ -79,7 +79,7 @@ export default async function StudiesPage() {
           ) : <Empty>Nothing left to do. 🎉</Empty>}
         </Section>
         <Section title="Study hours (last 4 weeks)" className="lg:col-span-2">
-          <StudyHoursChart data={a.daily} target={a.target} />
+          <StudyHoursChart data={a.daily} />
         </Section>
       </div>
 

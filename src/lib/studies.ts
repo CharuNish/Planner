@@ -6,11 +6,12 @@ import { num, readSheet, str } from "./google";
 export type Deadline = { title: string; type: string; subject: string; due: string; notes: string };
 export type Task = { subject: string; task: string; deadline: string; status: string; hours: number; doneOn: string; priority: string };
 export type StudyEntry = { date: string; hours: number; subject: string };
+export type TargetOverride = { date: string; hours: number };
 
 export async function loadStudies() {
-  if (studiesIsDemo()) return { demo: true, deadlines: demoDeadlines() as Deadline[], tasks: demoTasks() as Task[], log: demoStudyLog() as StudyEntry[] };
+  if (studiesIsDemo()) return { demo: true, deadlines: demoDeadlines() as Deadline[], tasks: demoTasks() as Task[], log: demoStudyLog() as StudyEntry[], targets: [] as TargetOverride[] };
   const id = config.google.studiesSheetId;
-  const [d, t, l] = await Promise.all([readSheet(id, "Deadlines"), readSheet(id, "Tasks").catch(() => []), readSheet(id, "StudyLog").catch(() => [])]);
+  const [d, t, l, tg] = await Promise.all([readSheet(id, "Deadlines"), readSheet(id, "Tasks").catch(() => []), readSheet(id, "StudyLog").catch(() => []), readSheet(id, "Targets").catch(() => [])]);
   return {
     demo: false,
     deadlines: d.map((r) => ({ title: str(r["title"]), type: str(r["type"]) || "Exam", subject: str(r["subject"]), due: parseDate(r["due date"] ?? r["due"]) || "", notes: str(r["notes"]) })).filter((x) => x.title && x.due),
@@ -19,21 +20,31 @@ export async function loadStudies() {
       hours: num(r["est hours"] ?? r["hours"]), doneOn: parseDate(r["done on"]) || "", priority: str(r["priority"]),
     })).filter((x) => x.task),
     log: l.map((r) => ({ date: parseDate(r["date"]) || "", hours: num(r["hours"]), subject: str(r["subject"]) })).filter((x) => x.date),
+    // Optional "Targets" tab (Date | Hours) to set a different goal for specific days, e.g. exam week or a busy day.
+    targets: tg.map((r) => ({ date: parseDate(r["date"]) || "", hours: num(r["hours"]) })).filter((x) => x.date),
   };
 }
 
 const isDone = (t: Task) => /^(done|finished|complete|yes|✓|true)/i.test(t.status);
 const hoursOf = (t: Task) => t.hours > 0 ? t.hours : 2; // blank estimate = 2 hours
 
-export function analyseStudies(deadlines: Deadline[], tasks: Task[], log: StudyEntry[]) {
+/** Study goal for a date: a "Targets" tab entry if there is one, otherwise the weekday goal. */
+export function targetFor(date: string, overrides: TargetOverride[] = []) {
+  const o = overrides.find((x) => x.date === date);
+  if (o) return o.hours;
+  const monFirst = (new Date(date + "T12:00:00Z").getUTCDay() + 6) % 7;
+  return config.studyTargetsByWeekday[monFirst];
+}
+
+export function analyseStudies(deadlines: Deadline[], tasks: Task[], log: StudyEntry[], overrides: TargetOverride[] = []) {
   const today = todayISO();
-  const target = config.studyTargetHoursPerDay;
+  const target = targetFor(today, overrides);
 
   // Daily hours for the last 28 days
   const daily = Array.from({ length: 28 }, (_, i) => {
     const date = addDays(today, i - 27);
     const hours = log.filter((e) => e.date === date).reduce((a, e) => a + e.hours, 0);
-    return { date, label: date.slice(8, 10) + "/" + date.slice(5, 7), hours, target };
+    return { date, label: date.slice(8, 10) + "/" + date.slice(5, 7), hours, target: targetFor(date, overrides) };
   });
   const last14 = daily.slice(-15, -1); // the 14 full days before today
   const avg14 = last14.reduce((a, d) => a + d.hours, 0) / 14;
@@ -90,6 +101,8 @@ export function analyseStudies(deadlines: Deadline[], tasks: Task[], log: StudyE
     today, target, daily, avg14, week, zeroDays, hoursToday, streak, deadlineStatus, priorities, subjects, overall, maxNeed,
     done: tasks.filter(isDone).length, todo: tasks.filter((t) => !isDone(t)),
     finished: tasks.filter(isDone).sort((a, b) => b.doneOn.localeCompare(a.doneOn)),
-    wastedHours: Math.max(0, target * 14 - last14.reduce((a, d) => a + d.hours, 0)),
+    weekTarget: last7.reduce((a, d) => a + d.target, 0),
+    avgTarget14: last14.reduce((a, d) => a + d.target, 0) / 14,
+    wastedHours: Math.max(0, last14.reduce((a, d) => a + d.target - d.hours, 0)),
   };
 }

@@ -39,6 +39,7 @@ For each one:
 | **Deadlines** | Title · Type · Subject · Due Date · Notes | Exams and submissions. |
 | **Tasks** | Subject · Task · Deadline · Status · Est Hours · Done On · Priority | **Deadline** must match a Title from the Deadlines tab, so the planner knows which exam a lesson belongs to. Status: `Todo`, `Doing` or `Done`. Est Hours is how long you think it'll take (blank = 2 hours). Priority is optional (`High`/`Medium`/`Low`). |
 | **StudyLog** | Date · Hours · Subject · Notes | One row per study session (or per day). |
+| **Targets** *(optional)* | Date · Hours | A different study goal for a specific day, e.g. `8` on a free day before an exam, or `0` on a wedding day. Days not listed use your weekday goals (see `STUDY_TARGET_HOURS` below). |
 
 Dates work as `2026-11-20` or `20/11/2026` (day first).
 
@@ -89,7 +90,7 @@ This lets the planner read your sheets and calendar **without making them public
 | `OWNER_NAME` | Charuka |
 | `TIMEZONE` | `Asia/Colombo` (change if you move) |
 | `CURRENCY` | `Rs` (or `LKR`, `$`, …) |
-| `STUDY_TARGET_HOURS` | how many hours a day you aim to study, e.g. `4` |
+| `STUDY_TARGET_HOURS` | your daily study goal. One number for every day (`4`), or **7 numbers for Monday to Sunday** separated by commas, e.g. `2,2,3,2,2,6,6`. For one-off days use the Targets tab. |
 
 4. Click **Deploy**. After a minute you get a link like `planner-charuka.vercel.app`. Open it and log in. 🎉
 
