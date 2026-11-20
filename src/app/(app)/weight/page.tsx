@@ -1,6 +1,9 @@
 import { WeightChart } from "@/components/charts";
 import { MadeItButton, MeasureForm, WeightForm } from "@/components/forms2";
 import { BodyOutline } from "@/components/body-outline";
+import { Body3D } from "@/components/body3d";
+import { BodyViews } from "@/components/body-views";
+import { config } from "@/lib/config";
 import { Hype } from "@/components/hype";
 import { weightHype } from "@/lib/hype";
 import { SafeImg } from "@/components/img";
@@ -69,7 +72,7 @@ export default async function WeightPage({ searchParams }: { searchParams: Promi
         {"error" in ms && ms.error && <p className="text-sm text-bad mb-3">{ms.error.includes("misnamed") ? "Add a “Measurements” tab to your Life sheet (Date, Chest, Waist, Belly, Hip, Arms, Thigh, Notes)." : ms.error}</p>}
         {m ? (
           <div className="grid lg:grid-cols-[1.3fr_1fr] gap-6 items-center">
-            <BodyOutline entries={ms.entries} />
+            <BodyViews three={<Body3D entries={ms.entries} heightCm={config.heightCm} />} lines={<BodyOutline entries={ms.entries} />} />
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
                 <Stat label="Total cm lost" value={`${m.totalLost} cm`} tone={m.totalLost > 0 ? "good" : undefined} hint={`over ${m.days} days, all 6 spots added up`} />
