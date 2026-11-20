@@ -27,7 +27,11 @@ async function pickModel(mode: "text" | "search"): Promise<string> {
   const version = (n: string) => parseFloat(n.match(/^gemini-([\d.]+)/)?.[1] || "0");
   const unstable = (n: string) => (/preview|exp/.test(n) ? 1 : 0);
   const lite = (n: string) => (/lite/.test(n) ? 1 : 0);
-  names.sort((a, b) => lite(a) - lite(b) || unstable(a) - unstable(b) || version(b) - version(a) || a.length - b.length);
+  // Summaries: newest stable full flash model. Web search: newest first, lite right after its full sibling,
+  // because old 2.x models are often listed but switched off ("no longer available to new users").
+  names.sort(mode === "text"
+    ? (a, b) => lite(a) - lite(b) || unstable(a) - unstable(b) || version(b) - version(a) || a.length - b.length
+    : (a, b) => version(b) - version(a) || lite(a) - lite(b) || unstable(a) - unstable(b) || a.length - b.length);
   if (!names.length) throw new Error(`No free Gemini model available for ${mode === "search" ? "web search" : "summaries"} with this key`);
   chosen[mode] = names[0];
   return names[0];
@@ -47,9 +51,11 @@ export async function gemini(prompt: string, opts: GeminiOpts = {}): Promise<{ t
   const mode = opts.search ? "search" : "text";
   let model = await pickModel(mode);
   let res = await call(model);
-  const tries = mode === "search" ? 8 : 4;
+  const tries = mode === "search" ? 15 : 4;
+  const trail: string[] = [];
   for (let i = 0; i < tries && !res.ok && !process.env.GEMINI_MODEL; i++) {
     const errText = await res.clone().text();
+    trail.push(`${model} ${res.status}`);
     // 404 = retired model; 429 with "limit: 0" = no free allowance; 429 "PerDay" = this model's daily free allowance is used up.
     // Free allowances are per model, so in all these cases another model may still work.
     // Web search ("grounding") has its own, much smaller free allowance that Google often reports with only a bare
@@ -58,7 +64,9 @@ export async function gemini(prompt: string, opts: GeminiOpts = {}): Promise<{ t
     if (notFree) {
       // This model isn't available (or has no free allowance) for this key: try the next newest one.
       retired[mode].add(model); chosen[mode] = null;
-      model = await pickModel(mode);
+      // Google sometimes names the replacement ("Please update your code to use models/X"): go straight there.
+      const suggested = errText.match(/use models\/(gemini-[\w.-]+?)(?=[\s"\\,]|$| for)/)?.[1];
+      model = suggested && !retired[mode].has(suggested) ? suggested : await pickModel(mode);
       res = await call(model);
     } else if (res.status === 429 && i === 0) {
       // Real "too many requests right now": wait a little once, then retry.
@@ -71,7 +79,7 @@ export async function gemini(prompt: string, opts: GeminiOpts = {}): Promise<{ t
     const t = await res.text();
     const quota = t.match(/"quotaId":\s*"([^"]+)"/)?.[1];
     const msg = t.match(/"message":\s*"([^"]{0,160})/)?.[1] || t.slice(0, 160);
-    throw new Error(`Gemini ${res.status} (${model}${quota ? `, ${quota}` : ""}): ${msg}`);
+    throw new Error(`Gemini ${res.status} (${model}${quota ? `, ${quota}` : ""}): ${msg}${trail.length ? ` [tried: ${trail.join(", ")}]` : ""}`);
   }
   const data = await res.json();
   const cand = data.candidates?.[0];
