@@ -2,7 +2,7 @@
 import { revalidatePath, revalidateTag } from "next/cache";
 import { calendarIsDemo, config, financeIsDemo, lifeIsDemo, studiesIsDemo } from "@/lib/config";
 import { addDays, todayISO } from "@/lib/dates";
-import { appendRow, insertEvent } from "@/lib/google";
+import { appendRow, appendRowCreatingTab, insertEvent } from "@/lib/google";
 
 type Result = { ok?: string; error?: string } | null;
 
@@ -72,6 +72,28 @@ export async function logWeight(_: Result, f: FormData): Promise<Result> {
   catch (e) { return { error: String(e) }; }
   revalidatePath("/", "layout");
   return { ok: "Saved ✓ Proud of you for checking in!" };
+}
+
+export async function logMeasurements(_: Result, f: FormData): Promise<Result> {
+  const n = needLife(); if (n) return n;
+  const keys = ["chest", "waist", "belly", "hip", "arms", "thigh"];
+  const vals = keys.map((k) => { const v = Number(f.get(k)); return v > 0 && v < 300 ? v : ""; });
+  if (vals.every((v) => v === "")) return { error: "Enter at least one measurement in cm." };
+  try { await appendRow(config.google.lifeSheetId, "Measurements", [String(f.get("date") || todayISO()), ...vals, String(f.get("notes") || "")]); }
+  catch (e) { return { error: String(e) }; }
+  revalidatePath("/weight");
+  return { ok: "Saved ✓ Look at that outline go!" };
+}
+
+export async function setCountdown(_: Result, f: FormData): Promise<Result> {
+  const n = needLife(); if (n) return n;
+  const date = String(f.get("date") || ""), label = String(f.get("label") || "").trim().slice(0, 60);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return { error: "Pick a date." };
+  // Saved as text ('2027-01-01) so Google Sheets doesn't turn it into a number.
+  try { await appendRowCreatingTab(config.google.lifeSheetId, "Settings", ["Setting", "Value", "Label"], ["countdown", `'${date}`, label || "Countdown"]); }
+  catch (e) { return { error: String(e) }; }
+  revalidatePath("/");
+  return { ok: "Countdown updated ✓" };
 }
 
 export async function markRecipeMade(_: Result, f: FormData): Promise<Result> {

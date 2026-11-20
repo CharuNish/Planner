@@ -1,9 +1,12 @@
 import { WeightChart } from "@/components/charts";
-import { MadeItButton, WeightForm } from "@/components/forms2";
+import { MadeItButton, MeasureForm, WeightForm } from "@/components/forms2";
+import { BodyOutline } from "@/components/body-outline";
+import { Hype } from "@/components/hype";
+import { weightHype } from "@/lib/hype";
 import { SafeImg } from "@/components/img";
 import { DemoBanner, Empty, PageHeader, ProgressBar, Section, Stat } from "@/components/ui";
 import { prettyDate, todayISO } from "@/lib/dates";
-import { analyseWeight, cheer, loadCookLog, loadWeight } from "@/lib/life";
+import { analyseMeasurements, analyseWeight, loadCookLog, loadMeasurements, loadWeight, MEASURE_LABEL, MEASURES } from "@/lib/life";
 import { getRecipes, isoWeek, searchRecipes, type Recipe } from "@/lib/recipes";
 
 export const dynamic = "force-dynamic";
@@ -15,8 +18,13 @@ const APPLIANCES = Object.keys(APPLIANCE_ICON);
 export default async function WeightPage({ searchParams }: { searchParams: Promise<{ q?: string; shuffle?: string; use?: string }> }) {
   const { q, shuffle, use } = await searchParams;
   const today = todayISO();
-  const [w, log] = await Promise.all([loadWeight().catch((e) => ({ demo: false, entries: [], error: String(e) })), loadCookLog().catch(() => ({ demo: false, log: [] }))]);
+  const [w, log, ms] = await Promise.all([
+    loadWeight().catch((e) => ({ demo: false, entries: [], error: String(e) })), loadCookLog().catch(() => ({ demo: false, log: [] })),
+    loadMeasurements().catch((e) => ({ demo: false, entries: [], error: String(e) })),
+  ]);
   const a = analyseWeight(w.entries);
+  const m = analyseMeasurements(ms.entries);
+  const hype = weightHype(a, w.entries, m, today);
   let recipes: Recipe[] = [], recipeError = "";
   try { recipes = q ? await searchRecipes(q) : await getRecipes(isoWeek(today) + (shuffle ? `-${shuffle}` : "")); } catch (e) { recipeError = String(e); }
   if (use) recipes = recipes.filter((r) => r.appliances.includes(use));
@@ -24,19 +32,14 @@ export default async function WeightPage({ searchParams }: { searchParams: Promi
 
   return (
     <div className="space-y-5">
-      <PageHeader title="⚖️ Weight & food" subtitle="Your progress, a little cheering on, and real recipes for your kitchen"><WeightForm /></PageHeader>
+      <PageHeader title="⚖️ Weight & food" subtitle="Your glow-up in numbers, a LOT of cheering on, and real recipes for your kitchen"><WeightForm /></PageHeader>
       {w.demo && <DemoBanner what="Life sheet" />}
       {"error" in w && w.error && <div className="card p-4 text-sm text-bad">{w.error}</div>}
 
       {a ? (
         <>
-          <div className="card p-5 flex gap-3 items-start" style={{ background: "linear-gradient(135deg, var(--accent-soft), transparent)" }}>
-            <div className="text-3xl">{a.mood === "losing" ? "🎉" : a.mood === "steady" ? "🌱" : "🤗"}</div>
-            <div>
-              <p className="font-medium">{cheer(a.mood, today)}</p>
-              {a.daysSinceLast > 7 && <p className="text-sm muted mt-1">It&apos;s been {a.daysSinceLast} days since your last weigh-in. Hop on the scale when you can!</p>}
-            </div>
-          </div>
+          <Hype text={hype[0]} i={0} />
+          {a.daysSinceLast > 7 && <p className="text-sm muted -mt-2">It&apos;s been {a.daysSinceLast} days since your last weigh-in. Hop on the scale, babe!</p>}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             <Stat label="Current" value={`${a.current.kg} kg`} hint={`on ${prettyDate(a.current.date)}`} />
             <Stat label="Lost so far" value={`${a.lost > 0 ? a.lost : 0} kg`} tone={a.lost > 0 ? "good" : undefined} hint={`since ${prettyDate(a.start.date, { day: "numeric", month: "short", year: "numeric" })} (${a.start.kg} kg)`} />
@@ -52,12 +55,45 @@ export default async function WeightPage({ searchParams }: { searchParams: Promi
               <ProgressBar value={(a.start.kg - a.current.kg) / (a.start.kg - a.goal)} tone="good" />
             </div>
           )}
+          <Hype text={hype[1]} i={1} />
           <Section title="Weight over time">
             <WeightChart data={a.chart} />
             {a.bmi && <p className="text-xs muted mt-2">BMI {a.bmi.toFixed(1)}. Just a rough guide; how you feel matters more.</p>}
           </Section>
         </>
       ) : <Section title="Weight"><Empty>No weigh-ins yet. Log your first one with the button above!</Empty></Section>}
+
+      <Hype text={hype[2]} i={2} />
+
+      <Section title="📏 Body measurements" action={<MeasureForm last={m ? Object.fromEntries(MEASURES.map((k) => [k, m.latest[k]])) : undefined} />}>
+        {"error" in ms && ms.error && <p className="text-sm text-bad mb-3">{ms.error.includes("misnamed") ? "Add a “Measurements” tab to your Life sheet (Date, Chest, Waist, Belly, Hip, Arms, Thigh, Notes)." : ms.error}</p>}
+        {m ? (
+          <div className="grid lg:grid-cols-[1.3fr_1fr] gap-6 items-center">
+            <BodyOutline entries={ms.entries} />
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <Stat label="Total cm lost" value={`${m.totalLost} cm`} tone={m.totalLost > 0 ? "good" : undefined} hint={`over ${m.days} days, all 6 spots added up`} />
+                <Stat label="Biggest win" value={m.change[m.best] < 0 ? MEASURE_LABEL[m.best] : "–"} tone={m.change[m.best] < 0 ? "good" : undefined} hint={m.change[m.best] < 0 ? `down ${Math.round(-m.change[m.best] * 10) / 10} cm` : "add another check-in"} />
+              </div>
+              <table className="w-full text-sm">
+                <thead><tr className="text-xs muted text-left"><th className="font-normal py-1">cm</th><th className="font-normal text-right">Day 1</th>{m.prev && <th className="font-normal text-right">Last time</th>}<th className="font-normal text-right">Now</th><th className="font-normal text-right">Change</th></tr></thead>
+                <tbody>
+                  {MEASURES.map((k) => (
+                    <tr key={k} className="border-t border-[var(--border)]">
+                      <td className="py-1.5">{MEASURE_LABEL[k]}</td><td className="text-right tabular muted">{m.first[k]}</td>{m.prev && <td className="text-right tabular muted">{m.prev[k]}</td>}
+                      <td className="text-right tabular font-medium">{m.latest[k]}</td>
+                      <td className={`text-right tabular ${m.change[k] < 0 ? "text-good" : m.change[k] > 0 ? "text-warn" : "muted"}`}>{m.change[k] > 0 ? "+" : ""}{m.change[k]}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {m.daysSinceLast > 21 && <p className="text-xs text-warn">Last measured {m.daysSinceLast} days ago. Time for a new check-in, the outline is waiting! 📏</p>}
+            </div>
+          </div>
+        ) : <Empty>Add your first measurements and I&apos;ll draw your outline. Every new check-in draws a new one inside it.</Empty>}
+      </Section>
+
+      <Hype text={hype[3]} i={3} />
 
       <Section title="🍳 Recipes for your kitchen" action={<a href={`/weight?shuffle=${Date.now() % 100000}`} className="text-xs text-accent">🔀 Shuffle</a>}>
         <p className="text-sm muted mb-3">Real recipes from TheMealDB that only need a gas cooker, rice cooker, sandwich maker or air fryer. New picks every week.</p>
@@ -91,6 +127,8 @@ export default async function WeightPage({ searchParams }: { searchParams: Promi
           ))}
         </div>
       </Section>
+
+      <Hype text={hype[4]} i={4} />
 
       <Section title="📒 My cooking log">
         {log.log.length ? (

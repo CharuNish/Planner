@@ -157,3 +157,56 @@ export async function loadSavedOpps(): Promise<{ demo: boolean; saved: SavedOpp[
   const rows = await tab("Opportunities");
   return { demo: false, saved: rows.map((r) => ({ title: str(r["title"]), type: str(r["type"]), org: str(r["organisation"] ?? r["org"]), deadline: parseDate(r["deadline"]) || "", link: str(r["link"]), status: str(r["status"]) || "Interested", notes: str(r["notes"]) })).filter((s) => s.title) };
 }
+
+// ───── Body measurements (cm) ─────
+export const MEASURES = ["chest", "waist", "belly", "hip", "arms", "thigh"] as const;
+export type Measure = (typeof MEASURES)[number];
+export type MeasureEntry = { date: string } & Record<Measure, number>;
+export const MEASURE_LABEL: Record<Measure, string> = { chest: "Chest", waist: "Waist", belly: "Belly", hip: "Hip", arms: "Arms", thigh: "Thigh" };
+
+export async function loadMeasurements(): Promise<{ demo: boolean; entries: MeasureEntry[] }> {
+  if (lifeIsDemo()) {
+    const t = todayISO();
+    const base = { chest: 96, waist: 82, belly: 94, hip: 106, arms: 31, thigh: 62 };
+    const entries = [84, 56, 28, 0].map((ago, i) => ({ date: addDays(t, -ago), chest: base.chest - i * 1.2, waist: base.waist - i * 1.8, belly: base.belly - i * 2.2, hip: base.hip - i * 1.5, arms: base.arms - i * 0.5, thigh: base.thigh - i * 1 }));
+    return { demo: true, entries };
+  }
+  const rows = await tab("Measurements");
+  const pickNum = (r: Record<string, unknown>, k: string) => {
+    const key = Object.keys(r).find((h) => h.startsWith(k) || (k === "hip" && h.startsWith("hips")) || (k === "arms" && h.startsWith("arm")));
+    return key ? num(r[key]) : 0;
+  };
+  const entries = rows.map((r) => ({ date: parseDate(r["date"]) || "", ...Object.fromEntries(MEASURES.map((m) => [m, pickNum(r, m)])) }) as MeasureEntry)
+    .filter((e) => e.date && MEASURES.some((m) => e[m] > 0)).sort((a, b) => a.date.localeCompare(b.date));
+  // Carry forward a measurement you skipped, so a blank cell doesn't look like 0 cm.
+  for (let i = 1; i < entries.length; i++) for (const m of MEASURES) if (!entries[i][m]) entries[i][m] = entries[i - 1][m];
+  for (let i = entries.length - 2; i >= 0; i--) for (const m of MEASURES) if (!entries[i][m]) entries[i][m] = entries[i + 1][m];
+  return { demo: false, entries };
+}
+
+export function analyseMeasurements(entries: MeasureEntry[]) {
+  if (!entries.length) return null;
+  const first = entries[0], latest = entries[entries.length - 1];
+  const prev = entries.length > 1 ? entries[entries.length - 2] : null;
+  const change = Object.fromEntries(MEASURES.map((m) => [m, Math.round((latest[m] - first[m]) * 10) / 10])) as Record<Measure, number>;
+  const sincePrev = prev ? (Object.fromEntries(MEASURES.map((m) => [m, Math.round((latest[m] - prev[m]) * 10) / 10])) as Record<Measure, number>) : null;
+  const totalLost = Math.round(MEASURES.reduce((s, m) => s + Math.max(0, first[m] - latest[m]), 0) * 10) / 10;
+  const best = MEASURES.reduce((b, m) => (change[m] < change[b] ? m : b), MEASURES[0]);
+  return { first, latest, prev, change, sincePrev, totalLost, best, days: daysBetween(first.date, latest.date), daysSinceLast: daysBetween(latest.date, todayISO()) };
+}
+
+// ───── Settings you can change from the website (stored in a "Settings" tab, last value wins) ─────
+export async function loadSettings(): Promise<Record<string, { value: string; label: string }>> {
+  if (lifeIsDemo()) return {};
+  const rows = await tab("Settings").catch(() => []);
+  const out: Record<string, { value: string; label: string }> = {};
+  for (const r of rows) { const k = str(r["setting"]).toLowerCase(); if (k) out[k] = { value: parseDate(r["value"]) || str(r["value"]), label: str(r["label"]) }; }
+  return out;
+}
+
+export async function getCountdown(): Promise<{ date: string; label: string }> {
+  const s = await loadSettings().catch(() => ({} as Record<string, { value: string; label: string }>));
+  const c = s["countdown"];
+  if (c?.value && /^\d{4}-\d{2}-\d{2}$/.test(c.value)) return { date: c.value, label: c.label || "Countdown" };
+  return { date: process.env.COUNTDOWN_DATE || "2027-01-01", label: process.env.COUNTDOWN_LABEL || "New Year 2027 🎆" };
+}

@@ -4,6 +4,9 @@ import { config } from "@/lib/config";
 import { addDays, daysBetween, todayISO } from "@/lib/dates";
 import { analyseFinance, fmt, loadFinance, upcomingBills } from "@/lib/finance";
 import { analyseStudies, loadStudies } from "@/lib/studies";
+import { studyNudges } from "@/lib/nudges";
+import { analyseMeasurements, analyseWeight, loadMeasurements, loadWeight } from "@/lib/life";
+import { weightHype } from "@/lib/hype";
 import { getOpportunities } from "@/lib/opportunities";
 import { buildQueue, lastPosted, loadContentSheet, loadQueueFiles } from "@/lib/content";
 import { contentFolderIsDemo, contentIsDemo } from "@/lib/config";
@@ -38,11 +41,16 @@ export async function GET(req: Request) {
   try {
     const s = await loadStudies();
     const a = analyseStudies(s.deadlines, s.tasks, s.log, s.targets);
-    const soon = a.deadlineStatus.filter((d) => d.daysLeft <= 7);
-    if (soon.length) lines.push("", "📚 Deadlines this week:", ...soon.map((d) => `• ${d.title}: ${d.daysLeft}d (${d.status})`));
-    if (a.priorities[0]) lines.push("", `⭐ Study first: ${a.priorities[0].task}`);
+    const cal = await loadEvents(22).catch(() => ({ events: [] }));
+    const nudges = studyNudges(a, s.tasks, cal.events).filter((n) => n.level !== "good").slice(0, 4);
+    if (nudges.length) lines.push("", "🤖 Deadline bot:", ...nudges.map((n) => n.text));
   } catch { /* studies not connected */ }
 
+  try {
+    const [w, ms] = await Promise.all([loadWeight(), loadMeasurements().catch(() => ({ entries: [] }))]);
+    const hype = weightHype(analyseWeight(w.entries), w.entries, analyseMeasurements(ms.entries));
+    if (hype[0]) lines.push("", `💖 ${hype[0]}`);
+  } catch { /* life sheet not connected */ }
   if (!contentIsDemo() || !contentFolderIsDemo()) {
     try {
       const [q, sheet] = await Promise.all([loadQueueFiles(), loadContentSheet()]);

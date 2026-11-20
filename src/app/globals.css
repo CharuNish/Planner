@@ -39,7 +39,7 @@
 
 @layer base { *, ::before, ::after { border-color: var(--border); } }
 
-html { background: var(--bg); }
+html { background: var(--bg); font-size: 17.5px; }
 body {
   color: var(--fg);
   font-family: var(--font-sans);
@@ -51,7 +51,8 @@ body {
   background-attachment: fixed;
   min-height: 100dvh;
 }
-h1, h2, h3 { font-family: var(--font-display); letter-spacing: -0.01em; }
+h1, h2, h3 { font-family: var(--font-display); letter-spacing: 0; font-weight: 600; }
+h1 { font-size: 2.1rem; }
 ::selection { background: rgba(139, 92, 246, .45); }
 
 .muted { color: var(--muted); }
@@ -84,7 +85,7 @@ select.input option { background: var(--card-solid); }
 .tabular { font-variant-numeric: tabular-nums; }
 .gradient-text { background: linear-gradient(90deg, #c4b5fd, #67e8f9); -webkit-background-clip: text; background-clip: text; color: transparent; }
 .glow-text { text-shadow: 0 0 24px rgba(139, 92, 246, .55); }
-.kicker { font-family: var(--font-mono); font-size: .68rem; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+.kicker { font-family: var(--font-display); font-weight: 500; font-size: .74rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
 
 @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 .rise > * { animation: rise .5s ease both; }
@@ -98,3 +99,14 @@ select.input option { background: var(--card-solid); }
 .recharts-line-curve, .recharts-area-curve { filter: drop-shadow(0 0 5px rgba(139, 92, 246, .55)); }
 .recharts-legend-item-text { color: var(--muted) !important; }
 .recharts-text { fill: var(--muted); }
+
+/* Weight tab hype lines */
+.hype {
+  background-clip: text; -webkit-background-clip: text; color: transparent;
+  filter: drop-shadow(0 0 14px rgba(236, 72, 153, .35));
+  animation: hype-pop .7s cubic-bezier(.2, 1.4, .4, 1) both, hype-float 5s ease-in-out 1s infinite;
+}
+@keyframes hype-pop { from { opacity: 0; scale: .6; } to { opacity: 1; scale: 1; } }
+@keyframes hype-float { 0%, 100% { translate: 0 0; } 50% { translate: 0 -4px; } }
+.hype-emoji { color: initial; -webkit-text-fill-color: initial; background: none; display: inline-block; font-size: .9em; margin-left: .1em; }
+@media (prefers-reduced-motion: reduce) { .hype { animation: none; } }

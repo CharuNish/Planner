@@ -104,6 +104,16 @@ export async function appendRow(sheetId: string, tab: string, row: unknown[]) {
   return gfetch(url, { method: "POST", body: JSON.stringify({ values: [row] }) });
 }
 
+/** Appends a row, creating the tab (with headers) first if it doesn't exist yet. */
+export async function appendRowCreatingTab(sheetId: string, tab: string, headers: string[], row: unknown[]) {
+  try { return await appendRow(sheetId, tab, row); } catch (e) {
+    if (!/parse range|misnamed/i.test(String(e))) throw e;
+    await gfetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}:batchUpdate`, { method: "POST", body: JSON.stringify({ requests: [{ addSheet: { properties: { title: tab } } }] }) });
+    await appendRow(sheetId, tab, headers);
+    return appendRow(sheetId, tab, row);
+  }
+}
+
 export type GEvent = {
   id: string; summary?: string; description?: string; location?: string; colorId?: string;
   start: { date?: string; dateTime?: string }; end: { date?: string; dateTime?: string };

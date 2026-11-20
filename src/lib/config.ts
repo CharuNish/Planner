@@ -32,6 +32,8 @@ export const config = {
   youtubeKey: process.env.YOUTUBE_API_KEY || "",
   // Your YouTube channels, e.g. "Life with C=@lifewithc; Ane Manda=@anemanda" (handle or channel ID).
   youtubeChannels: (process.env.YOUTUBE_CHANNELS || "").split(/[;\n]/).map((x) => x.split("=").map((y) => y.trim())).filter((p) => p.length === 2 && p[0] && p[1]).map(([name, id]) => ({ name, id })),
+  // Used in the Weight tab hype quotes ("imagine how ___ would regret it"). Leave EX_NAME empty in Vercel to keep the default, or set "none" to turn those off.
+  exName: process.env.EX_NAME === "none" ? "" : process.env.EX_NAME || "Tharush",
   weightGoalKg: Number(process.env.WEIGHT_GOAL_KG || 0),
   heightCm: Number(process.env.HEIGHT_CM || 0),
   sleepTarget: Number(process.env.SLEEP_TARGET_HOURS || 7),

@@ -217,6 +217,14 @@ Then **Redeploy**. Instagram, TikTok and Facebook don't give free stats, so log 
 
 ---
 
+# Extras you can change
+
+- **Body measurements:** add a **Measurements** tab to your Life sheet with the headers `Date | Chest | Waist | Belly | Hip | Arms | Thigh | Notes` (it's in the updated [`templates/Life-template.xlsx`](templates/Life-template.xlsx)). Then use **📏 Add measurements** on the Weight tab.
+- **Home countdown:** press **✎ change** under the countdown and pick a new date and name. (It saves to a **Settings** tab in your Life sheet, created automatically.)
+- **Hype quotes:** the "imagine how ___ would regret it" lines use the name in `EX_NAME` (Vercel setting). Set it to `none` to turn those off.
+
+---
+
 ## Running it on your laptop (optional, for tinkering)
 
 1. Install [Node.js](https://nodejs.org) (the LTS version).

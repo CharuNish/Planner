@@ -1,6 +1,6 @@
 {
-  "name": "My Planner",
-  "short_name": "Planner",
+  "name": "Charu's Dashboard",
+  "short_name": "Charu's",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#070912",

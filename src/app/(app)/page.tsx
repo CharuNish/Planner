@@ -8,7 +8,8 @@ import { analyseFinance, fmt, loadFinance, upcomingBills } from "@/lib/finance";
 import { quoteOfTheDay } from "@/lib/quotes";
 import { analyseStudies, loadStudies } from "@/lib/studies";
 import { CountUp, Ring } from "@/components/fx";
-import { analyseHabits, analyseWeight, loadHabits, loadWeight } from "@/lib/life";
+import { analyseHabits, analyseWeight, getCountdown, loadHabits, loadWeight } from "@/lib/life";
+import { Countdown } from "@/components/countdown";
 
 export const dynamic = "force-dynamic";
 
@@ -19,12 +20,13 @@ function greeting() {
 
 export default async function Home() {
   const today = todayISO();
-  const [fin, stu, cal, hab, wt] = await Promise.all([
+  const [fin, stu, cal, hab, wt, cd] = await Promise.all([
     loadFinance().catch((e) => ({ error: String(e) })),
     loadStudies().catch((e) => ({ error: String(e) })),
     loadEvents(14).catch((e) => ({ demo: false, events: [], error: String(e) })),
     loadHabits().catch(() => null),
     loadWeight().catch(() => null),
+    getCountdown(),
   ]);
   const h = hab ? analyseHabits(hab.days) : null;
   const w = wt ? analyseWeight(wt.entries) : null;
@@ -63,6 +65,7 @@ export default async function Home() {
           </div>
         </div>
       </section>
+      <Countdown date={cd.date} label={cd.label} />
       {anyDemo && <div className="rounded-xl px-4 py-3 text-sm soft">👀 Some tabs show <b>sample data</b> until your Google Sheets and Calendar are connected (see SETUP.md).</div>}
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">

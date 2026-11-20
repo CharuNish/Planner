@@ -1,16 +1,17 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, JetBrains_Mono, Space_Grotesk } from "next/font/google";
+import { Fredoka, JetBrains_Mono, Nunito } from "next/font/google";
 import "./globals.css";
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
+// Round, bubbly fonts: Nunito for text, Fredoka for headings and numbers.
+const inter = Nunito({ subsets: ["latin"], variable: "--font-inter" });
 const mono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-mono" });
-const display = Space_Grotesk({ subsets: ["latin"], variable: "--font-display" });
+const display = Fredoka({ subsets: ["latin"], variable: "--font-display", weight: ["400", "500", "600", "700"] });
 
 export const metadata: Metadata = {
-  title: "My Planner",
+  title: "Charu's Dashboard",
   description: "Personal daily planner dashboard",
   manifest: "/manifest.webmanifest",
-  appleWebApp: { capable: true, title: "Planner", statusBarStyle: "black-translucent" },
+  appleWebApp: { capable: true, title: "Charu's Dashboard", statusBarStyle: "black-translucent" },
   icons: { icon: "/icons/icon-192.png", apple: "/icons/icon-192.png" },
 };
 

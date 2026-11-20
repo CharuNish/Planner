@@ -3,6 +3,26 @@ import { LogStudyForm } from "@/components/forms";
 import { DemoBanner, Empty, PageHeader, ProgressBar, Section, Stat, StatusChip } from "@/components/ui";
 import { prettyDate } from "@/lib/dates";
 import { analyseStudies, loadStudies } from "@/lib/studies";
+import { loadEvents } from "@/lib/calendar";
+import { studyNudges, type Nudge } from "@/lib/nudges";
+
+const BUBBLE: Record<Nudge["level"], string> = { fire: "#fb7185", warn: "#fbbf24", info: "#22d3ee", good: "#34d399" };
+function NudgeBot({ nudges }: { nudges: Nudge[] }) {
+  if (!nudges.length) return null;
+  return (
+    <section className="card p-5">
+      <div className="flex items-center gap-3 mb-4">
+        <div className="w-10 h-10 rounded-2xl grid place-items-center text-xl" style={{ background: "linear-gradient(135deg,#8b5cf6,#ec4899)", boxShadow: "0 0 18px rgba(236,72,153,.45)" }}>🤖</div>
+        <div><h2 className="font-semibold">Deadline bot</h2><div className="text-xs muted">online · judging your progress</div></div>
+      </div>
+      <div className="space-y-2.5">
+        {nudges.map((n, i) => (
+          <div key={i} className="rise max-w-3xl rounded-2xl rounded-tl-md px-4 py-3 text-[0.95rem] leading-relaxed" style={{ animationDelay: `${i * 0.12}s`, background: `color-mix(in srgb, ${BUBBLE[n.level]} 11%, rgba(13,16,32,.7))`, border: `1px solid color-mix(in srgb, ${BUBBLE[n.level]} 40%, transparent)`, boxShadow: n.level === "fire" ? `0 0 18px color-mix(in srgb, ${BUBBLE[n.level]} 30%, transparent)` : undefined }}>{n.text}</div>
+        ))}
+      </div>
+    </section>
+  );
+}
 
 export const dynamic = "force-dynamic";
 
@@ -12,6 +32,8 @@ export default async function StudiesPage() {
     return <div><PageHeader title="📚 Studies & Research" /><div className="card p-5 text-bad text-sm">Couldn&apos;t read your studies sheet: {String(e).slice(0, 300)}</div></div>;
   }
   const a = analyseStudies(data.deadlines, data.tasks, data.log, data.targets);
+  const cal = await loadEvents(22).catch(() => ({ events: [] }));
+  const nudges = studyNudges(a, data.tasks, cal.events);
   const subjects = [...new Set([...data.tasks.map((t) => t.subject), ...data.log.map((l) => l.subject)].filter(Boolean))];
   const message = a.overall === "On track"
     ? `You're on track! 🎉 At your usual ${a.avg14.toFixed(1)} h/day you can finish everything before each deadline.`
@@ -30,6 +52,8 @@ export default async function StudiesPage() {
         <StatusChip status={a.overall} />
         <p className="text-sm">{message}</p>
       </div>
+
+      <NudgeBot nudges={nudges} />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <Stat label="Studied this week" value={`${a.week} h`} hint={`target ${a.weekTarget} h (last 7 days)`} tone={a.week >= a.weekTarget ? "good" : a.week >= a.weekTarget * 0.6 ? "warn" : "bad"} />

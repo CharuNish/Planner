@@ -1,6 +1,6 @@
 "use client";
 import { useActionState, useState } from "react";
-import { habitCheckIn, logWeight, markRecipeMade, saveOpportunity } from "@/app/(app)/actions";
+import { habitCheckIn, logMeasurements, logWeight, markRecipeMade, saveOpportunity } from "@/app/(app)/actions";
 
 const today = () => new Date().toLocaleDateString("en-CA");
 function Msg({ s }: { s: { ok?: string; error?: string } | null }) {
@@ -72,6 +72,30 @@ export function SaveOppButton({ o }: { o: { title: string; type: string; org: st
       {o.deadline && <label className="text-xs muted flex items-center gap-1"><input type="checkbox" name="calendar" defaultChecked /> add deadline to calendar</label>}
       <button disabled={pending} className="text-xs rounded-lg px-2.5 py-1 border font-medium">{pending ? "Saving…" : "☆ Save"}</button>
       {s?.error && <span className="text-xs text-bad">{s.error}</span>}
+    </form>
+  );
+}
+
+export function MeasureForm({ last }: { last?: Record<string, number> }) {
+  const [open, setOpen] = useState(false);
+  const [s, action, pending] = useActionState(logMeasurements, null);
+  if (!open) return <button className="text-sm rounded-lg border px-3 py-1.5" onClick={() => setOpen(true)}>📏 Add measurements</button>;
+  const fields: [string, string][] = [["chest", "Chest"], ["waist", "Waist"], ["belly", "Belly"], ["hip", "Hip"], ["arms", "Arms"], ["thigh", "Thigh"]];
+  return (
+    <form action={action} className="card p-4 space-y-2 w-full">
+      <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
+        {fields.map(([k, label]) => (
+          <label key={k} className="text-xs muted">{label} (cm)<input name={k} type="number" step="0.1" placeholder={last?.[k] ? String(last[k]) : ""} className="input w-full mt-1" /></label>
+        ))}
+      </div>
+      <div className="flex flex-wrap gap-2 items-center">
+        <input name="date" type="date" defaultValue={today()} className="input" />
+        <input name="notes" placeholder="Notes (optional)" className="input flex-1 min-w-40" />
+        <button disabled={pending} className="btn">{pending ? "Saving…" : "Save"}</button>
+        <button type="button" className="text-sm muted" onClick={() => setOpen(false)}>Cancel</button>
+      </div>
+      <p className="text-xs muted">Measure at the same spot each time (e.g. belly at the belly button). Skip any you don&apos;t have; I&apos;ll reuse the last one.</p>
+      <Msg s={s} />
     </form>
   );
 }
