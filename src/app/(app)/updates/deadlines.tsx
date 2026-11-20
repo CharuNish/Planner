@@ -10,15 +10,19 @@ const STATUS: Record<Conference["status"], { label: string; cls: string }> = {
   estimated: { label: "≈ estimated", cls: "text-warn" },
   tba: { label: "TBA", cls: "muted" },
 };
-const rankCls = (r: string) => (r === "A*" ? "text-good" : r === "A" ? "text-accent" : "muted");
+const rankCls = (r: string) => (r === "A*" ? "text-good" : r === "A" ? "text-accent" : r === "B" ? "text-warn" : "muted");
 
 function daysLeft(iso: string) {
   return Math.ceil((deadlineMs(iso) - Date.now()) / 86400000);
 }
 
 /** Upcoming paper-submission deadlines in computer vision, XAI and fuzzy logic (next 12 months). */
-export function DeadlinesView() {
-  const { dated, tba } = upcomingConferences();
+const TOPICS = ["All", "CV", "XAI", "Fuzzy"] as const;
+
+export function DeadlinesView({ topic = "All" }: { topic?: string }) {
+  const all = upcomingConferences();
+  const pick = (c: Conference) => topic === "All" || c.topics.includes(topic as Conference["topics"][number]);
+  const dated = all.dated.filter(pick), tba = all.tba.filter(pick);
   const next = dated[0];
   return (
     <div className="space-y-5">
@@ -26,7 +30,8 @@ export function DeadlinesView() {
         <p className="text-sm muted max-w-2xl">Conferences where you can submit computer vision, XAI or fuzzy logic papers, with deadlines in the next 12 months. Passed deadlines disappear by themselves. Deadlines are end of day, Anywhere on Earth. Checked {fmt(LAST_CHECKED)}: ask Claude to refresh the list when you need it.</p>
         {next && <DeadlineCountdown deadline={next.deadline!} label={next.short} estimated={next.status === "estimated"} />}
       </div>
-      <Section title="🗓️ Upcoming submission deadlines">
+      <div className="flex flex-wrap gap-2">{TOPICS.map((t) => <a key={t} href={t === "All" ? "/updates?view=deadlines" : `/updates?view=deadlines&topic=${t}`} className={`chip ${topic === t ? "soft" : "muted"}`}>{t === "All" ? "All" : t === "CV" ? "👁️ Computer vision" : t === "XAI" ? "🔍 XAI" : "🌫️ Fuzzy logic"}</a>)}</div>
+      <Section title={`🗓️ Upcoming submission deadlines (${dated.length})`}>
         {dated.length === 0 ? <p className="text-sm muted">No dated deadlines left in the list. Time to ask Claude for a refresh!</p> : (
           <div className="overflow-x-auto -mx-1">
             <table className="w-full text-sm min-w-[720px]">
@@ -61,7 +66,7 @@ export function DeadlinesView() {
           <ul className="space-y-2 text-sm">
             {tba.map((c) => (
               <li key={c.short} className="flex flex-wrap justify-between gap-2">
-                <span><a href={c.url} target="_blank" rel="noreferrer" className="font-semibold hover:underline">{c.short}</a> <span className="muted">· {c.city}{c.country !== c.city ? `, ${c.country}` : ""} · {c.dates}</span></span>
+                <span><a href={c.url} target="_blank" rel="noreferrer" className="font-semibold hover:underline">{c.short}</a> <span className="muted">· {c.city}{c.country !== c.city ? `, ${c.country}` : ""} · {c.dates}</span>{c.note && <span className="block text-[11px] muted">{c.note}</span>}</span>
                 <span className={`text-xs font-semibold ${rankCls(c.rank)}`}>{c.rank}</span>
               </li>
             ))}
