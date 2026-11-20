@@ -16,19 +16,20 @@ const NOT_WANTED = /\b(intern(ship)?s?|trainee|placement|volunteer)\b/i;
 type Search = { type: Opportunity["type"]; ask: string; where: string };
 const ROLES = "Research Assistant, Research Engineer or AI Engineer JOBS (full-time or contract; NOT internships)";
 const SEARCHES: Search[] = [
-  { type: "Job", ask: ROLES, where: "at the National University of Singapore (NUS). Look on careers.nus.edu.sg and nus.edu.sg job pages" },
+  { type: "Job", ask: ROLES, where: "at NUS (careers.nus.edu.sg), NTU Singapore (ntu.edu.sg careers) and SUTD (sutd.edu.sg careers). Check each university's official career/jobs pages" },
+  { type: "Job", ask: ROLES, where: "at EPFL (epfl.ch careers), ETH Zurich (jobs.ethz.ch) and INSAIT in Sofia (insait.ai careers). Check each institute's official career/jobs pages" },
+  { type: "Job", ask: ROLES, where: "at MBZUAI, Mohamed bin Zayed University of Artificial Intelligence in Abu Dhabi (mbzuai.ac.ae careers)" },
   { type: "Job", ask: ROLES, where: "posted on LinkedIn Jobs (linkedin.com/jobs/view links)" },
-  { type: "Job", ask: ROLES, where: `at universities, research labs and companies ${INTERESTS.opportunityRegions} (official career pages, jobs.ac.uk, EURAXESS, etc.)` },
-  { type: "PhD", ask: "fully funded PhD positions / studentships", where: `${INTERESTS.opportunityRegions}, from official university pages, FindAPhD, EURAXESS, etc.` },
-  { type: "PhD", ask: "fully funded PhD positions", where: "posted on LinkedIn (linkedin.com/jobs/view or LinkedIn posts by professors/labs)" },
-  { type: "MSc", ask: "Master's (MSc) programmes and scholarships currently accepting applications", where: `${INTERESTS.opportunityRegions}, from official university pages` },
-  { type: "MSc", ask: "funded Master's (MSc) positions and scholarships", where: "posted on LinkedIn" },
+  { type: "Job", ask: ROLES, where: `at other universities, research labs and companies ${INTERESTS.opportunityRegions} (official career pages, jobs.ac.uk, EURAXESS, etc.)` },
+  { type: "PhD", ask: "fully funded PhD positions / studentships", where: `${INTERESTS.opportunityRegions}, especially NUS, NTU, SUTD, MBZUAI, EPFL, ETH Zurich and INSAIT. Use official university pages, FindAPhD, EURAXESS and LinkedIn posts` },
+  { type: "MSc", ask: "Master's (MSc) programmes and scholarships currently accepting applications", where: `${INTERESTS.opportunityRegions}, especially NUS, NTU, SUTD, MBZUAI, EPFL, ETH Zurich and INSAIT. Use official pages and LinkedIn posts` },
   { type: "School", ask: "summer schools, winter schools and short research programmes (including ones for students)", where: INTERESTS.opportunityRegions },
 ];
 
 function sourceOf(url: string) {
   if (/linkedin\.com/i.test(url)) return "LinkedIn";
-  if (/nus\.edu\.sg/i.test(url)) return "NUS";
+  const known: [RegExp, string][] = [[/nus\.edu\.sg/i, "NUS"], [/ntu\.edu\.sg/i, "NTU"], [/sutd\.edu\.sg/i, "SUTD"], [/mbzuai/i, "MBZUAI"], [/epfl\.ch/i, "EPFL"], [/ethz\.ch/i, "ETH Zurich"], [/insait/i, "INSAIT"]];
+  for (const [re, name] of known) if (re.test(url)) return name;
   try { return new URL(url).hostname.replace(/^www\./, ""); } catch { return "web search"; }
 }
 
@@ -73,4 +74,4 @@ async function allOpportunities() {
   return { items: unique, errors, refreshed: new Date().toISOString() };
 }
 
-export const getOpportunities = daily("opportunities-v2", allOpportunities);
+export const getOpportunities = daily("opportunities-v3", allOpportunities);

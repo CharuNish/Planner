@@ -16,7 +16,12 @@ const QUICK = [
   { label: "LinkedIn: Research Assistant", url: li('"research assistant" ("computer vision" OR "neuroscience" OR "psychology" OR "explainable AI")') },
   { label: "LinkedIn: PhD positions", url: li('"PhD" ("computer vision" OR "explainable AI" OR "neuroscience")') },
   { label: "LinkedIn: MSc positions", url: li('("MSc" OR "master") scholarship ("computer vision" OR "AI" OR "neuroscience")') },
-  { label: "NUS Careers", url: "https://careers.nus.edu.sg/" },
+];
+// Google searches limited to each institution's own website, so they always work even if a careers page moves.
+const site = (domain: string) => `https://www.google.com/search?q=${encodeURIComponent(`("research engineer" OR "research assistant" OR "AI engineer") site:${domain}`)}&tbs=qdr:m`;
+const INSTITUTIONS = [
+  { label: "NUS", url: site("nus.edu.sg") }, { label: "NTU", url: site("ntu.edu.sg") }, { label: "SUTD", url: site("sutd.edu.sg") },
+  { label: "MBZUAI", url: site("mbzuai.ac.ae") }, { label: "EPFL", url: site("epfl.ch") }, { label: "ETH Zurich", url: site("ethz.ch") }, { label: "INSAIT", url: site("insait.ai") },
 ];
 export const maxDuration = 60;
 
@@ -65,7 +70,7 @@ export default async function OpportunitiesPage({ searchParams }: { searchParams
   const upcoming = saved.saved.filter((s) => !/reject|closed|declin/i.test(s.status)).sort((a, b) => (a.deadline || "9999").localeCompare(b.deadline || "9999"));
   return (
     <div className="space-y-5">
-      <PageHeader title="🚀 Opportunities" subtitle={`New jobs, PhDs, MSc programmes and schools in ${INTERESTS.opportunityFields}. Refreshed daily.`} />
+      <PageHeader title="🚀 Opportunities" subtitle={`RA / Research Engineer / AI Engineer jobs, PhDs, MSc programmes and schools in ${INTERESTS.opportunityFields}. Checks NUS, NTU, SUTD, MBZUAI, EPFL, ETH Zurich, INSAIT and LinkedIn daily.`} />
       {upcoming.length > 0 && (
         <Section title="⭐ My saved list">
           <ul className="space-y-2">
@@ -83,7 +88,10 @@ export default async function OpportunitiesPage({ searchParams }: { searchParams
         <div className="flex flex-wrap gap-2 text-sm">
           {QUICK.map((q) => <a key={q.label} href={q.url} target="_blank" rel="noreferrer" className="rounded-lg border px-3 py-1.5 hover:bg-black/5 dark:hover:bg-white/5">{q.label} ↗</a>)}
         </div>
-        <p className="text-xs muted mt-2">These open LinkedIn and NUS with your searches already filled in (LinkedIn ones show the last 7 days).</p>
+        <div className="flex flex-wrap gap-2 text-sm mt-3"><span className="muted text-xs self-center">University jobs (last month):</span>
+          {INSTITUTIONS.map((q) => <a key={q.label} href={q.url} target="_blank" rel="noreferrer" className="rounded-lg border px-3 py-1.5 hover:bg-black/5 dark:hover:bg-white/5">{q.label} ↗</a>)}
+        </div>
+        <p className="text-xs muted mt-2">LinkedIn links show the last 7 days. University links search each institution&apos;s own website for RA / RE / AI Engineer posts from the last month.</p>
       </Section>
       <div className="flex flex-wrap gap-2">{TYPES.map((t) => <a key={t.key} href={t.key === "All" ? "/opportunities" : `/opportunities?type=${t.key}`} className={`chip ${type === t.key ? "soft" : "muted"}`}>{t.label}</a>)}</div>
       <Section title="Open now">
