@@ -3,7 +3,7 @@ import { config } from "./config";
 // Google's Gemini (free key from https://aistudio.google.com/apikey) writes the short summaries.
 export const hasGemini = () => Boolean(config.geminiKey);
 
-type GeminiOpts = { search?: boolean; temperature?: number };
+type GeminiOpts = { search?: boolean; temperature?: number; media?: { mimeType: string; data: string } };
 
 /**
  * Google retires Gemini model names over time, so instead of hard-coding one we ask Google
@@ -34,7 +34,7 @@ async function pickModel(mode: "text" | "search"): Promise<string> {
 export async function gemini(prompt: string, opts: GeminiOpts = {}): Promise<{ text: string; sources: { title: string; uri: string }[] }> {
   if (!config.geminiKey) throw new Error("No GEMINI_API_KEY set");
   const body: Record<string, unknown> = {
-    contents: [{ role: "user", parts: [{ text: prompt }] }],
+    contents: [{ role: "user", parts: [...(opts.media ? [{ inline_data: { mime_type: opts.media.mimeType, data: opts.media.data } }] : []), { text: prompt }] }],
     generationConfig: { temperature: opts.temperature ?? 0.4, ...(opts.search ? {} : { responseMimeType: "application/json" }) },
   };
   if (opts.search) body.tools = [{ google_search: {} }];

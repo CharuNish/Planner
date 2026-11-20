@@ -169,6 +169,40 @@ The Updates and Opportunities tabs refresh by themselves at **6:00 AM Sri Lanka 
 
 ---
 
+# Stage 4: Content (posting queue, captions, ideas)
+
+You upload to Instagram / TikTok / YouTube / Facebook yourself. The site keeps your queue, writes captions and hashtags, tracks how posts do, and reminds you on Telegram every morning.
+
+## 10. Make your Content folder in Google Drive
+
+1. In [Google Drive](https://drive.google.com), make a folder called **Content**.
+2. Inside it, make one folder **per account**. The name must include the channel and the app, for example:
+   - `Life with C - Instagram`, `Life with C - TikTok`, `Life with C - YouTube`
+   - `Ane Manda - Instagram`, `Ane Manda - Facebook`, `Ane Manda - TikTok`, `Ane Manda - YouTube`
+3. Drop your finished videos into the right folder. They queue **oldest first**. Videos under about 12 MB are "watched" by the AI so captions match what's in them; bigger ones use the file name and the note you type.
+4. Right-click the **Content** folder → **Share** → paste the robot's email (same one you used for the sheets) → **Viewer** → untick "Notify" → **Share**.
+5. Turn on the Drive API: open the [Google Drive API page](https://console.cloud.google.com/apis/library/drive.googleapis.com) (your `planner` project selected at the top) → **Enable**.
+6. Copy the folder's ID: open the Content folder; the address looks like `drive.google.com/drive/folders/`**`1AbC...xyz`**. The bold part is the ID (pasting the whole link also works).
+
+## 11. Add the Content tabs to your Life sheet
+
+1. Download [`templates/Content-template.xlsx`](templates/Content-template.xlsx).
+2. Open your **Life** Google Sheet → **File → Import → Upload** → pick the file → **Insert new sheet(s)** → **Import data**. You'll get 4 new tabs: **Posts**, **Captions**, **Followers**, **Channels**.
+3. In the **Channels** tab, describe each channel in a sentence (what it's about, language, who watches). The AI uses this for captions and ideas.
+
+You never need to type in Posts or Captions yourself: the site fills them when you press **✨ Write caption** and **✓ I posted this**. You can add views/likes from the site too.
+
+## 12. Add the new settings in Vercel
+
+| Name | Value |
+|---|---|
+| `CONTENT_FOLDER_ID` | the Content folder ID (or its link) |
+| `YOUTUBE_CHANNELS` | optional, for automatic YouTube subscribers and views, e.g. `Life with C=@yourhandle; Ane Manda=@otherhandle` |
+
+Then **Redeploy**. Instagram, TikTok and Facebook don't give free stats, so log followers on the Content tab once a week (**+ Log follower counts**) and add views/likes on each post when you have a minute. The morning Telegram message tells you what's next in each queue and nudges you when stats are missing.
+
+---
+
 ## Running it on your laptop (optional, for tinkering)
 
 1. Install [Node.js](https://nodejs.org) (the LTS version).
@@ -181,4 +215,5 @@ The Updates and Opportunities tabs refresh by themselves at **6:00 AM Sri Lanka 
 - **"… 404"**: the sheet ID is wrong.
 - **"Unable to parse range"**: a tab name is different from the template (e.g. `Transaction` instead of `Transactions`).
 - **Calendar shows nothing**: check the calendar is shared with the robot and the calendar ID is right.
+- **Content tab says "Google Drive says no access (403)"**: the Content folder isn't shared with the robot, or the Drive API isn't enabled (step 10).
 - **Private key errors**: paste the whole key, including the BEGIN/END lines.

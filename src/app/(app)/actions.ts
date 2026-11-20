@@ -109,10 +109,10 @@ export async function saveOpportunity(_: Result, f: FormData): Promise<Result> {
 }
 
 // "Try again" for a daily feed that failed (forces one fresh attempt).
-const RETRYABLE = ["github-trending", "papers", "medium", "youtube", "opportunities"];
+const RETRYABLE = ["github-trending", "papers", "medium", "youtube", "opportunities", "content-ideas", "content-trends", "my-youtube"];
 export async function retryDaily(f: FormData) {
   const key = String(f.get("key") || "");
   if (!RETRYABLE.includes(key)) return;
   revalidateTag(`daily-${key}`);
-  revalidatePath("/updates"); revalidatePath("/opportunities");
+  revalidatePath("/updates"); revalidatePath("/opportunities"); revalidatePath("/content");
 }

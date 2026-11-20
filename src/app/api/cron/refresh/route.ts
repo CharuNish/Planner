@@ -3,6 +3,7 @@ import { config } from "@/lib/config";
 import { todayISO } from "@/lib/dates";
 import { settle } from "@/lib/fetchx";
 import { getRecipes, isoWeek } from "@/lib/recipes";
+import { getTrends, getYouTubeChannels } from "@/lib/content";
 import { getMedium, getPapers, getTrending, getVideos } from "@/lib/updates";
 
 export const maxDuration = 60;
@@ -23,5 +24,7 @@ export async function GET(req: Request) {
     out[name] = r.ok ? "ok" : r.error;
     await new Promise((res) => setTimeout(res, 3000));
   }
+  // Content trends and your YouTube stats don't use Gemini, so no pauses needed.
+  for (const [name, run] of [["content-trends", getTrends], ["my-youtube", getYouTubeChannels]] as [string, () => Promise<unknown>][]) { const r = await settle(run()); out[name] = r.ok ? "ok" : r.error; }
   return NextResponse.json(out);
 }

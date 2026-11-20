@@ -88,3 +88,34 @@ export function WeightChart({ data }: { data: { label: string; kg: number; avg: 
     </ResponsiveContainer>
   );
 }
+
+const CHANNEL_COLORS = ["var(--series-1)", "var(--series-2)", "var(--series-3)"];
+export function FollowerGrowthChart({ data, channels }: { data: Record<string, string | number>[]; channels: string[] }) {
+  return (
+    <ResponsiveContainer width="100%" height={240}>
+      <LineChart data={data} margin={{ left: -10, right: 8, top: 8 }}>
+        <CartesianGrid stroke="var(--grid)" vertical={false} />
+        <XAxis dataKey="label" {...axis} minTickGap={24} />
+        <YAxis {...axis} tickFormatter={short} domain={["auto", "auto"]} />
+        <Tooltip contentStyle={tooltipStyle} formatter={(v) => Number(v).toLocaleString()} />
+        <Legend wrapperStyle={{ fontSize: 12 }} />
+        {channels.map((c, i) => <Line key={c} isAnimationActive={false} name={c} dataKey={c} stroke={CHANNEL_COLORS[i % 3]} strokeWidth={2.5} dot={false} />)}
+      </LineChart>
+    </ResponsiveContainer>
+  );
+}
+
+export function PostsPerWeekChart({ data, channels }: { data: Record<string, string | number>[]; channels: string[] }) {
+  return (
+    <ResponsiveContainer width="100%" height={200}>
+      <BarChart data={data} margin={{ left: -20, right: 8, top: 8 }}>
+        <CartesianGrid stroke="var(--grid)" vertical={false} />
+        <XAxis dataKey="label" {...axis} />
+        <YAxis {...axis} allowDecimals={false} />
+        <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "rgba(139,92,246,.08)" }} labelFormatter={(l) => `Week ending ${l}`} />
+        <Legend wrapperStyle={{ fontSize: 12 }} />
+        {channels.map((c, i) => <Bar key={c} isAnimationActive={false} name={c} dataKey={c} stackId="a" fill={CHANNEL_COLORS[i % 3]} radius={i === channels.length - 1 ? [4, 4, 0, 0] : 0} maxBarSize={28} />)}
+      </BarChart>
+    </ResponsiveContainer>
+  );
+}

@@ -1,4 +1,4 @@
-export const TABS = [
+export const TABS: { href: string; label: string; icon: string; soon?: boolean }[] = [
   { href: "/", label: "Home", icon: "🏠" },
   { href: "/finance", label: "Finance", icon: "💰" },
   { href: "/calendar", label: "Calendar", icon: "📅" },
@@ -8,5 +8,5 @@ export const TABS = [
   { href: "/weight", label: "Weight", icon: "⚖️" },
   { href: "/habits", label: "Habits", icon: "✅" },
   { href: "/goals", label: "Mini goals", icon: "🎯" },
-  { href: "/soon/content", label: "Content", icon: "🎬", soon: true },
+  { href: "/content", label: "Content", icon: "🎬" },
 ];

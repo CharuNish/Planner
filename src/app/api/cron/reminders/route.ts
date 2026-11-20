@@ -5,6 +5,8 @@ import { addDays, daysBetween, todayISO } from "@/lib/dates";
 import { analyseFinance, fmt, loadFinance, upcomingBills } from "@/lib/finance";
 import { analyseStudies, loadStudies } from "@/lib/studies";
 import { getOpportunities } from "@/lib/opportunities";
+import { buildQueue, lastPosted, loadContentSheet, loadQueueFiles } from "@/lib/content";
+import { contentFolderIsDemo } from "@/lib/config";
 
 export const maxDuration = 60;
 
@@ -40,6 +42,24 @@ export async function GET(req: Request) {
     if (soon.length) lines.push("", "📚 Deadlines this week:", ...soon.map((d) => `• ${d.title}: ${d.daysLeft}d (${d.status})`));
     if (a.priorities[0]) lines.push("", `⭐ Study first: ${a.priorities[0].task}`);
   } catch { /* studies not connected */ }
+
+  if (!contentFolderIsDemo()) {
+    try {
+      const [q, sheet] = await Promise.all([loadQueueFiles(), loadContentSheet()]);
+      const queue = buildQueue(q.files, sheet.posts);
+      const out: string[] = [];
+      for (const acc of q.accounts) {
+        const next = queue.find((x) => x.channel === acc.channel && x.platform === acc.platform);
+        const left = queue.filter((x) => x.channel === acc.channel && x.platform === acc.platform).length;
+        const since = lastPosted(sheet.posts, acc.channel, acc.platform);
+        if (next) out.push(`• ${acc.channel} ${acc.platform}: "${sheet.captions.get(next.fileId)?.title || next.name}"${since === null ? "" : since === 0 ? " (already posted today)" : ` (last post ${since}d ago)`}${left > 1 ? ` +${left - 1} more` : ""}`);
+        else if (since !== null && since >= 7) out.push(`• ${acc.channel} ${acc.platform}: queue empty and no post for ${since} days. Add a video to its folder!`);
+      }
+      if (out.length) lines.push("", `🎬 To post today (${queue.length} left in total):`, ...out);
+      const stats = sheet.posts.filter((p) => !p.views && daysBetween(p.date, today) >= 2 && daysBetween(p.date, today) <= 7 && p.platform !== "YouTube");
+      if (stats.length) lines.push(`📝 Add views/likes for ${stats.length} recent post${stats.length > 1 ? "s" : ""} on the Content tab.`);
+    } catch { /* content not connected */ }
+  }
 
   const res = await fetch(`https://api.telegram.org/bot${config.telegram.botToken}/sendMessage`, {
     method: "POST", headers: { "Content-Type": "application/json" },
