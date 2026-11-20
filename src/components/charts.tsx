@@ -1,5 +1,5 @@
 "use client";
-import { Area, ComposedChart, Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Area, ComposedChart, Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 const axis = { stroke: "var(--muted)", fontSize: 11, tickLine: false, axisLine: false } as const;
 const tooltipStyle = { background: "rgba(13,16,32,.95)", border: "1px solid rgba(139,92,246,.35)", borderRadius: 10, fontSize: 12, color: "var(--fg)", boxShadow: "0 0 20px rgba(139,92,246,.25)" };
@@ -116,6 +116,41 @@ export function PostsPerWeekChart({ data, channels }: { data: Record<string, str
         <Legend wrapperStyle={{ fontSize: 12 }} />
         {channels.map((c, i) => <Bar key={c} isAnimationActive={false} name={c} dataKey={c} stackId="a" fill={CHANNEL_COLORS[i % 3]} radius={i === channels.length - 1 ? [4, 4, 0, 0] : 0} maxBarSize={28} />)}
       </BarChart>
+    </ResponsiveContainer>
+  );
+}
+
+export function StepsChart({ data, goal }: { data: { label: string; steps: number | null }[]; goal: number }) {
+  return (
+    <ResponsiveContainer width="100%" height={230}>
+      <BarChart data={data} margin={{ left: -10, right: 8, top: 8 }}>
+        <defs>
+          <linearGradient id="stp" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#f472b6" /><stop offset="100%" stopColor="#8b5cf6" stopOpacity={0.45} /></linearGradient>
+        </defs>
+        <CartesianGrid stroke="var(--grid)" vertical={false} />
+        <XAxis dataKey="label" {...axis} interval={4} />
+        <YAxis {...axis} tickFormatter={short} />
+        <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "rgba(244,114,182,.08)" }} formatter={(v) => [`${Math.round(Number(v)).toLocaleString()} steps`, "Steps"]} />
+        <ReferenceLine y={goal} stroke="var(--ref)" strokeDasharray="5 4" label={{ value: `goal ${short(goal)}`, fill: "var(--muted)", fontSize: 11, position: "insideTopRight" }} />
+        <Bar isAnimationActive={false} name="Steps" dataKey="steps" fill="url(#stp)" radius={[4, 4, 0, 0]} maxBarSize={18} />
+      </BarChart>
+    </ResponsiveContainer>
+  );
+}
+
+export function HeartChart({ data }: { data: { label: string; resting: number | null; avg: number | null; max: number | null }[] }) {
+  return (
+    <ResponsiveContainer width="100%" height={230}>
+      <LineChart data={data} margin={{ left: -20, right: 8, top: 8 }}>
+        <CartesianGrid stroke="var(--grid)" vertical={false} />
+        <XAxis dataKey="label" {...axis} interval={4} />
+        <YAxis {...axis} domain={["dataMin - 5", "dataMax + 5"]} allowDecimals={false} />
+        <Tooltip contentStyle={tooltipStyle} formatter={(v, name) => [`${v} bpm`, name]} />
+        <Legend wrapperStyle={{ fontSize: 12 }} />
+        <Line isAnimationActive={false} name="Resting" dataKey="resting" stroke="#fb7185" strokeWidth={2.5} dot={false} connectNulls />
+        <Line isAnimationActive={false} name="Average" dataKey="avg" stroke="var(--series-1)" strokeWidth={2} dot={false} connectNulls />
+        <Line isAnimationActive={false} name="Highest" dataKey="max" stroke="var(--series-2)" strokeWidth={1.5} strokeDasharray="4 3" dot={false} connectNulls />
+      </LineChart>
     </ResponsiveContainer>
   );
 }

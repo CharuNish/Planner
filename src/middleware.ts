@@ -1,8 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { SESSION_COOKIE, verifySession } from "@/lib/auth";
 
-// Every page needs you to be logged in, except the login page, the phone-app files and the cron job.
-const PUBLIC = ["/login", "/manifest.webmanifest", "/sw.js", "/icons", "/api/cron", "/favicon.ico"];
+// Every page needs you to be logged in, except the login page, the phone-app files the cron job and the Apple Watch sync (which checks its own key).
+const PUBLIC = ["/login", "/manifest.webmanifest", "/sw.js", "/icons", "/api/cron", "/api/apple-health", "/favicon.ico"];
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;

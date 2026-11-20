@@ -126,7 +126,7 @@ export async function saveOpportunity(_: Result, f: FormData): Promise<Result> {
       await insertEvent(config.google.calendarIds[0], { summary: `[Deadline] Apply: ${title}`, description: String(f.get("link") || ""), start: { date: deadline }, end: { date: addDays(deadline, 1) } });
     }
   } catch (e) { return { error: String(e) }; }
-  revalidatePath("/opportunities");
+  revalidatePath("/updates");
   return { ok: f.get("calendar") && deadline ? "Saved, and the deadline is in your calendar ✓" : "Saved ✓" };
 }
 
@@ -136,7 +136,7 @@ export async function retryDaily(f: FormData) {
   const key = String(f.get("key") || "");
   if (!RETRYABLE.includes(key)) return;
   revalidateTag(`daily-${key}`);
-  revalidatePath("/updates"); revalidatePath("/opportunities"); revalidatePath("/content");
+  revalidatePath("/updates"); revalidatePath("/content");
 }
 
 // ───── Wins ─────
@@ -171,4 +171,18 @@ export async function sendMorningNow(): Promise<Result> {
     await sendTelegram(m.text);
     return { ok: "Sent! Check Telegram 💌" };
   } catch (e) { return { error: String(e).slice(0, 200) }; }
+}
+
+export async function logWorkout(_: Result, f: FormData): Promise<Result> {
+  const n = needLife(); if (n) return n;
+  const type = String(f.get("type") || "").trim();
+  const minutes = Math.round(Number(f.get("minutes") || 0));
+  if (!type) return { error: "Pick what you trained 💪" };
+  if (!(minutes > 0)) return { error: "How many minutes?" };
+  try {
+    const { logManualWorkout } = await import("@/lib/health");
+    const gym = await logManualWorkout(String(f.get("date") || todayISO()), type, minutes, String(f.get("notes") || ""));
+    revalidatePath("/", "layout");
+    return { ok: `${type} ${minutes} min saved${gym ? ", gym ticked 🏋️‍♀️" : ""}. Look at you go!` };
+  } catch (e) { return { error: String(e) }; }
 }

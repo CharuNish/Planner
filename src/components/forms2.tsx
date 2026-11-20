@@ -1,6 +1,6 @@
 "use client";
 import { useActionState, useState } from "react";
-import { habitCheckIn, logMeasurements, logWeight, markRecipeMade, saveOpportunity } from "@/app/(app)/actions";
+import { habitCheckIn, logMeasurements, logWorkout, logWeight, markRecipeMade, saveOpportunity } from "@/app/(app)/actions";
 
 const today = () => new Date().toLocaleDateString("en-CA");
 function Msg({ s }: { s: { ok?: string; error?: string } | null }) {
@@ -95,6 +95,31 @@ export function MeasureForm({ last }: { last?: Record<string, number> }) {
         <button type="button" className="text-sm muted" onClick={() => setOpen(false)}>Cancel</button>
       </div>
       <p className="text-xs muted">Measure at the same spot each time (e.g. belly at the belly button). Skip any you don&apos;t have; I&apos;ll reuse the last one.</p>
+      <Msg s={s} />
+    </form>
+  );
+}
+
+const WORKOUT_ICON: Record<string, string> = { Strength: "🏋️‍♀️", Cardio: "🔥", HIIT: "⚡", Yoga: "🧘‍♀️", Pilates: "🤸‍♀️", Run: "🏃‍♀️", Walk: "🚶‍♀️", Dance: "💃" };
+/** One-tap "What did you train?" logger (iPhone Shortcuts can't read workouts on every iPhone). */
+export function WorkoutLogger({ choices, minutes, date }: { choices: string[]; minutes?: number; date?: string }) {
+  const [type, setType] = useState("");
+  const [s, action, pending] = useActionState(logWorkout, null);
+  return (
+    <form action={action} className="space-y-2">
+      <div className="flex flex-wrap gap-2">
+        {choices.map((c) => (
+          <button key={c} type="button" onClick={() => setType(c)} className={`chip ${type === c ? "soft" : "muted"}`} style={type === c ? { outline: "1px solid var(--accent)" } : undefined}>
+            {WORKOUT_ICON[c] || "💪"} {c}
+          </button>
+        ))}
+      </div>
+      <input type="hidden" name="type" value={type} />
+      <div className="flex flex-wrap gap-2 items-center">
+        <label className="text-xs muted flex items-center gap-1">min<input name="minutes" type="number" min="1" defaultValue={minutes || 30} className="input w-20" /></label>
+        <input name="date" type="date" defaultValue={date || today()} className="input" />
+        <button disabled={pending || !type} className="btn">{pending ? "Saving…" : "Log it"}</button>
+      </div>
       <Msg s={s} />
     </form>
   );

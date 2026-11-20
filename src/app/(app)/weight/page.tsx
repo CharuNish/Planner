@@ -10,6 +10,8 @@ import { SafeImg } from "@/components/img";
 import { DemoBanner, Empty, PageHeader, ProgressBar, Section, Stat } from "@/components/ui";
 import { prettyDate, todayISO } from "@/lib/dates";
 import { analyseMeasurements, analyseWeight, loadCookLog, loadMeasurements, loadWeight, MEASURE_LABEL, MEASURES } from "@/lib/life";
+import { HealthPanel } from "@/components/health-panel";
+import { loadHealth } from "@/lib/health";
 import { getRecipes, isoWeek, searchRecipes, type Recipe } from "@/lib/recipes";
 
 export const dynamic = "force-dynamic";
@@ -21,9 +23,10 @@ const APPLIANCES = Object.keys(APPLIANCE_ICON);
 export default async function WeightPage({ searchParams }: { searchParams: Promise<{ q?: string; shuffle?: string; use?: string }> }) {
   const { q, shuffle, use } = await searchParams;
   const today = todayISO();
-  const [w, log, ms] = await Promise.all([
+  const [w, log, ms, hl] = await Promise.all([
     loadWeight().catch((e) => ({ demo: false, entries: [], error: String(e) })), loadCookLog().catch(() => ({ demo: false, log: [] })),
     loadMeasurements().catch((e) => ({ demo: false, entries: [], error: String(e) })),
+    loadHealth().catch(() => ({ demo: false, days: [] })),
   ]);
   const a = analyseWeight(w.entries);
   const m = analyseMeasurements(ms.entries);
@@ -35,8 +38,12 @@ export default async function WeightPage({ searchParams }: { searchParams: Promi
 
   return (
     <div className="space-y-5">
-      <PageHeader title="⚖️ Weight & food" subtitle="Your glow-up in numbers, a LOT of cheering on, and real recipes for your kitchen"><WeightForm /></PageHeader>
+      <PageHeader title="💪 Body & Health" subtitle="Steps, heart and workouts from your Apple Watch, your glow-up in numbers, and real recipes for your kitchen"><WeightForm /></PageHeader>
       {w.demo && <DemoBanner what="Life sheet" />}
+
+      <HealthPanel days={hl.days} demo={hl.demo} hypeOffset={3} />
+
+      <h2 className="text-xl font-semibold pt-4">⚖️ Weight</h2>
       {"error" in w && w.error && <div className="card p-4 text-sm text-bad">{w.error}</div>}
 
       {a ? (

@@ -31,7 +31,7 @@ For each one:
 | **Transactions** | Date · Type · Category · Amount · Description · Method | One row per income or expense. Type is `Income` or `Expense`. Amounts are positive numbers. |
 | **Budgets** | Category · Monthly Budget | One row per spending category. Use the same category names as in Transactions. |
 | **Bills** | Name · Amount · Type · Frequency · Next Due · Category | Type: `Bill` / `Subscription` / `Payment`. Frequency: `Weekly`, `Monthly`, `Quarterly`, `Yearly` or `Once`. You only need to set the first due date; the planner works out the next ones. |
-| **Investments** | Name · Type · Institution · Amount · Rate % · Start Date · Term (Months) · Maturity Date · Interest Payout · Auto Renew · Current Value · Status · Notes | FDs, planned FDs, T-bills, unit trusts, shares, gold, savings. Created for you automatically. See step 12. |
+| **Investments** | Name · Type · Institution · Amount · Rate % · Start Date · Term (Months) · Maturity Date · Interest Payout · Auto Renew · Current Value · Status · Notes | FDs, planned FDs, T-bills, unit trusts, shares, gold, savings. Created for you automatically. See step 13. |
 
 ### Studies sheet tabs
 
@@ -219,7 +219,12 @@ If you had the older Content tabs (Queue, Posts, Captions, Channels), you can de
 - It uses your existing `GEMINI_API_KEY` for one short call per morning. If Gemini is busy or out of free quota, a built-in bestie voice writes it instead, so it always arrives.
 - To test it any time: Home page → **💌 Send me the morning message now**.
 
-## 12. Fixed deposits & investments (Finance tab)
+## 12. Apple Watch: steps, heart rate and workouts (optional)
+
+Your Apple Watch data can flow into the **💪 Body & Health** tab and the 7 AM Telegram recap every night, for free, using an iPhone Shortcut.
+Follow **[APPLE-WATCH.md](APPLE-WATCH.md)** (about 20 minutes, once). New Vercel setting: `HEALTH_KEY` (optional: `STEP_GOAL`, `MOVE_GOAL_KCAL`, `EXERCISE_GOAL_MIN`, `AGE`).
+
+## 13. Fixed deposits & investments (Finance tab)
 
 **No new settings needed.** Open the 💰 Finance page once and a new **Investments** tab appears in your Finance sheet by itself (with dropdowns). Scroll to **🏦 Savings & investments** at the bottom of the Finance page.
 

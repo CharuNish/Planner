@@ -13,6 +13,7 @@ import { analyseHabits, analyseMeasurements, analyseWeight, loadHabits, loadWins
 import { studyNudges } from "./nudges";
 import { analyseStudies, loadStudies, targetFor } from "./studies";
 import { analyseContent, loadContent } from "./content";
+import { analyseHealth, loadHealth } from "./health";
 
 const r1 = (n: number) => Math.round(n * 10) / 10;
 const isDone = (s: string) => /^(done|finished|complete|yes|✓|true)/i.test(s);
@@ -27,6 +28,7 @@ export type Recap = {
   money: { spent: number; topSpends: string[]; income: number; budgetLeftPerDay: number | null } | null;
   weight: { kg: number; change: number | null; lostTotal: number; toGoal: number | null } | null;
   measured: string | null;
+  watch: { steps: number | null; stepGoal: number; km: number | null; activeKcal: number | null; exerciseMin: number | null; workouts: string[]; restingHr: number | null; avgHr: number | null; maxHr: number | null; avgSteps7: number | null } | null;
   posts: string[];
   collabs: string[];
   events: string[];
@@ -40,12 +42,12 @@ export type MorningFacts = { name: string; today: string; todayWeekday: string; 
 export async function gatherMorningFacts(): Promise<MorningFacts> {
   const today = todayISO();
   const y = addDays(today, -1);
-  const rec: Recap = { date: y, weekday: weekday(y), study: null, tasksDone: [], habits: null, money: null, weight: null, measured: null, posts: [], collabs: [], events: [], highlights: [], notes: [] };
+  const rec: Recap = { date: y, weekday: weekday(y), study: null, tasksDone: [], habits: null, money: null, weight: null, measured: null, watch: null, posts: [], collabs: [], events: [], highlights: [], notes: [] };
   const todos: Todo[] = [];
   let botNudge: string | null = null;
   let studyTargetToday: number | null = null;
 
-  const [cal, fin, stu, hab, wt, ms, hl, con] = await Promise.all([
+  const [cal, fin, stu, hab, wt, ms, hl, con, hea] = await Promise.all([
     loadEvents(22, 1).catch(() => null),
     loadFinance().catch(() => null),
     loadStudies().catch(() => null),
@@ -54,6 +56,7 @@ export async function gatherMorningFacts(): Promise<MorningFacts> {
     loadMeasurements().catch(() => null),
     loadWins().catch(() => null),
     contentIsDemo() ? Promise.resolve(null) : loadContent().catch(() => null),
+    loadHealth().then((h) => (h.demo ? null : h)).catch(() => null),
   ]);
   const events: CalEvent[] = cal?.events ?? [];
 
@@ -106,6 +109,12 @@ export async function gatherMorningFacts(): Promise<MorningFacts> {
     const lost = a ? MEASURES.filter((m) => a.change[m] < 0).map((m) => `${MEASURE_LABEL[m]} ${r1(-a.change[m])} cm`) : [];
     rec.measured = lost.length ? `down ${lost.join(", ")} since day 1 (${a!.totalLost} cm total)` : "logged new measurements";
   }
+  if (hea) {
+    const a = analyseHealth(hea.days, today);
+    const d = a.yesterday;
+    if (d) rec.watch = { steps: d.steps, stepGoal: config.stepGoal, km: d.distanceKm, activeKcal: d.activeKcal, exerciseMin: d.exerciseMin, workouts: d.workouts.map((w) => `${w.type} ${Math.round(w.minutes)} min`), restingHr: d.restingHr, avgHr: d.avgHr, maxHr: d.maxHr, avgSteps7: a.avgSteps7 ? Math.round(a.avgSteps7) : null };
+    if (a.daysSinceSync !== null && a.daysSinceSync >= 2) todos.push({ icon: "⌚", text: `Your Apple Watch hasn't synced for ${a.daysSinceSync} days. Open Shortcuts and tap "Sync Health to Dashboard"` });
+  }
   if (hl) rec.highlights = hl.items.filter((h) => h.date === y).map((h) => (h.photo ? `${h.text} (with a photo 📸)` : h.text));
   if (con) {
     rec.posts = con.uploads.filter((u) => u.date === y).map((u) => `${u.channel}: "${u.title || u.type}" on ${u.platforms.join(", ")}`);
@@ -151,6 +160,23 @@ export function fallbackVoice(f: MorningFacts): Voice {
     const c = r.weight.change;
     recap.push(`⚖️ Weighed in at ${r.weight.kg} kg${c !== null ? (c < 0 ? `, down ${-c} kg 📉 YES GIRL` : c > 0 ? `, up ${c} kg (water weight, don't stress 💅)` : ", holding steady") : ""}. ${r.weight.lostTotal > 0 ? `${r.weight.lostTotal} kg gone in total!` : ""}`.trim());
   }
+  const wa = r.watch;
+  if (wa) {
+    const k = (x: number) => Math.round(x).toLocaleString("en-US");
+    if (wa.steps !== null) {
+      const g = wa.stepGoal;
+      recap.push(wa.steps >= g
+        ? pick([`👟 ${k(wa.steps)} steps! Goal smashed, those legs are SERVING 💅`, `👟 ${k(wa.steps)} steps (goal ${k(g)}). Hot girl walk: completed ✅`], "st1")
+        : wa.steps >= g * 0.6 ? pick([`👟 ${k(wa.steps)} steps, ${k(g - wa.steps)} short of ${k(g)}. So close it hurts 😩`, `👟 ${k(wa.steps)} steps. Almost! One more walk and you'd have had it 🚶‍♀️`], "st2")
+        : pick([`👟 Only ${k(wa.steps)} steps… babe, are we glued to the chair? 🪑 Walk it out today!`, `👟 ${k(wa.steps)} steps. Your watch is disappointed and honestly so am I 😤 Let's move today`], "st3"));
+    }
+    if (wa.workouts.length) recap.push(`🏋️‍♀️ Workout${wa.workouts.length > 1 ? "s" : ""}: ${wa.workouts.join(", ")}. Gym girlie behaviour 💪🔥`);
+    const extra: string[] = [];
+    if (wa.activeKcal !== null) extra.push(`${k(wa.activeKcal)} kcal burned`);
+    if (wa.exerciseMin !== null) extra.push(`${wa.exerciseMin} exercise min`);
+    if (wa.restingHr !== null) extra.push(`resting heart ${wa.restingHr} bpm`);
+    if (extra.length) recap.push(`⌚ ${extra.join(", ")}`);
+  }
   if (r.measured) recap.push(`📏 Measurements: ${r.measured} 🔥`);
   if (r.money) {
     if (r.money.spent > 0) recap.push(`💸 Spent ${fmt(r.money.spent)}${r.money.topSpends.length ? ` (${r.money.topSpends.join(", ")})` : ""}`);
@@ -176,6 +202,7 @@ async function aiVoice(f: MorningFacts): Promise<Voice> {
   const prompt = `You are ${f.name}'s sassy, loving best friend texting her a good-morning message on Telegram.
 Style: Gen-Z hype-girl bestie, playful, warm, a bit cheeky, lots of emojis, short punchy lines, NOT professional, NOT generic quotes. Mix it up every day (today is ${f.todayWeekday} ${f.today}).
 Use ONLY the facts below with their real numbers. Never invent achievements, numbers or events. If something wasn't logged, don't mention it (or tease her gently to log it). Celebrate wins loudly; for misses be cheeky but kind and turn it into today's mission.
+"watch" is her Apple Watch data (steps vs stepGoal, workouts, kcal, heart rate in bpm): hype good step counts and workouts by number, tease low steps cheekily.
 Each "highlights" item is a win / special thing she logged on her Wins page (steps, yoga, volunteering...): make a BIG deal of each one, by name.
 
 FACTS ABOUT YESTERDAY (${f.yesterday.weekday}):

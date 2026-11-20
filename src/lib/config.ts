@@ -26,6 +26,13 @@ export const config = {
     chatId: process.env.TELEGRAM_CHAT_ID || "",
   },
   cronSecret: process.env.CRON_SECRET || "",
+  // Apple Watch sync: the iPhone Shortcut sends this key. Falls back to CRON_SECRET if HEALTH_KEY isn't set.
+  healthKey: process.env.HEALTH_KEY || process.env.CRON_SECRET || "",
+  stepGoal: Number(process.env.STEP_GOAL || 10000),
+  moveGoal: Number(process.env.MOVE_GOAL_KCAL || 400),
+  exerciseGoal: Number(process.env.EXERCISE_GOAL_MIN || 30),
+  gymExerciseMin: Number(process.env.GYM_EXERCISE_MIN || 30), // watch exercise minutes that count as a gym day
+  age: Number(process.env.AGE || 0), // optional: used to judge very high heart-rate spikes (220 - age)
   geminiKey: process.env.GEMINI_API_KEY || "",
   youtubeKey: process.env.YOUTUBE_API_KEY || "",
   // Used in the Weight tab hype quotes ("imagine how ___ would regret it"). Leave EX_NAME empty in Vercel to keep the default, or set "none" to turn those off.

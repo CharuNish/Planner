@@ -6,6 +6,7 @@ import { prettyDate, todayISO } from "@/lib/dates";
 import { settle } from "@/lib/fetchx";
 import { hasGemini } from "@/lib/gemini";
 import { getMedium, getPapers, getTrending, getVideos } from "@/lib/updates";
+import { OpportunitiesView } from "./opportunities";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -85,10 +86,31 @@ async function Videos() {
   );
 }
 
-export default function UpdatesPage() {
+const VIEWS = [
+  { key: "reads", label: "📰 Daily reads", href: "/updates" },
+  { key: "opportunities", label: "🚀 Opportunities", href: "/updates?view=opportunities" },
+];
+
+export default async function UpdatesPage({ searchParams }: { searchParams: Promise<{ view?: string; type?: string }> }) {
+  const { view, type = "All" } = await searchParams;
+  const current = view === "opportunities" ? "opportunities" : "reads";
   return (
     <div className="space-y-5">
-      <PageHeader title="📰 Updates" subtitle={`Fresh picks for ${prettyDate(todayISO(), { weekday: "long", day: "numeric", month: "long" })}. Refreshed once a day, every morning.`} />
+      <PageHeader title="📰 Updates" subtitle={`Fresh picks and open opportunities for ${prettyDate(todayISO(), { weekday: "long", day: "numeric", month: "long" })}. Refreshed once a day, every morning.`} />
+      <nav className="flex flex-wrap gap-2" aria-label="Updates sections">
+        {VIEWS.map((v) => (
+          <a key={v.key} href={v.href} aria-current={current === v.key ? "page" : undefined}
+            className={`rounded-xl px-4 py-2 text-sm font-semibold border transition ${current === v.key ? "soft" : "muted hover:bg-white/5"}`}>{v.label}</a>
+        ))}
+      </nav>
+      {current === "opportunities" ? <OpportunitiesView type={type} /> : <Reads />}
+    </div>
+  );
+}
+
+function Reads() {
+  return (
+    <div className="space-y-5">
       {!hasGemini() && <div className="rounded-xl px-4 py-3 text-sm soft">✨ Add a free <b>GEMINI_API_KEY</b> to get plain-English summaries and smarter picks (see SETUP.md).</div>}
       <Section title="🔥 Trending on GitHub today"><Suspense fallback={<Loading what="trending repos" />}><Repos /></Suspense></Section>
       <div className="grid lg:grid-cols-5 gap-5">
