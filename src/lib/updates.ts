@@ -140,13 +140,16 @@ async function youtubePicks(): Promise<Video[]> {
     const data = await getJSON<{ items: { id: { videoId: string }; snippet: { title: string; channelTitle: string; publishedAt: string; thumbnails: { high?: { url: string }; medium?: { url: string } } } }[] }>(`https://www.googleapis.com/youtube/v3/search?${p}`);
     for (const it of data.items || []) found.push({ id: it.id.videoId, title: decodeEntities(it.snippet.title), channel: it.snippet.channelTitle, thumbnail: it.snippet.thumbnails.high?.url || it.snippet.thumbnails.medium?.url || "", views: 0, topic: q, published: it.snippet.publishedAt.slice(0, 10), why: "" });
   }));
+  // Only English or Sinhala: drop titles/channels written in other scripts (Hindi, Tamil, Arabic, etc.).
+  const OTHER_SCRIPT = /[\u0400-\u04FF\u0590-\u07FF\u0900-\u0D7F\u0E00-\u0FFF\u1000-\u109F\u3040-\u30FF\u3400-\u9FFF\uAC00-\uD7AF]/;
+  for (let i = found.length - 1; i >= 0; i--) if (OTHER_SCRIPT.test(found[i].title + found[i].channel)) found.splice(i, 1);
   if (!found.length) throw new Error("No videos found");
   const stats = await getJSON<{ items: { id: string; statistics: { viewCount?: string } }[] }>(`https://www.googleapis.com/youtube/v3/videos?part=statistics&id=${found.slice(0, 50).map((v) => v.id).join(",")}&key=${config.youtubeKey}`);
   for (const s of stats.items || []) { const v = found.find((x) => x.id === s.id); if (v) v.views = Number(s.statistics.viewCount || 0); }
   if (hasGemini()) {
     try {
       const { data } = await geminiJSON<{ i: number; why: string }[]>(
-        `${PLAIN}\nPick the 3 best YouTube videos to watch from this list: educational, high quality, not clickbait or hype. Different topics if possible.\nReturn JSON: [{"i": <number>, "why": "one short line"}]\n\n` +
+        `${PLAIN}\nPick the 3 best YouTube videos to watch from this list: educational, high quality, not clickbait, gossip or hype. The video must be in English or Sinhala only (never Hindi, Tamil or any other language, even if the title is in English letters). Different topics if possible.\nReturn JSON: [{"i": <number>, "why": "one short line"}]\n\n` +
         found.map((v, i) => `${i}. [${v.topic}] "${v.title}" by ${v.channel}, ${v.views.toLocaleString()} views`).join("\n"));
       const picked = data.map((d) => found[d.i] && { ...found[d.i], why: d.why }).filter(Boolean) as Video[];
       if (picked.length >= 2) return picked.slice(0, 3);
@@ -159,4 +162,4 @@ async function youtubePicks(): Promise<Video[]> {
 export const getTrending = daily("github-trending", trendingRepos);
 export const getPapers = daily("papers", topPapers);
 export const getMedium = daily("medium", mediumPicks);
-export const getVideos = daily("youtube", youtubePicks);
+export const getVideos = daily("youtube-v2", youtubePicks);
