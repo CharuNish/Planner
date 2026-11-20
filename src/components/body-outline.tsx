@@ -1,101 +1,109 @@
-import { MEASURE_LABEL, type Measure, type MeasureEntry } from "@/lib/life";
+import { type Measure, type MeasureEntry } from "@/lib/life";
 import { prettyDate } from "@/lib/dates";
 
-// A front-view line figure drawn from your measurements (all outlines use the same scale,
-// so as you slim down the newest outline sits inside the first one).
-const CX = 150;
+// Line-art figures drawn from your measurements: "Day 1" and "Now" side by side, on the SAME scale.
+// Each part (chest, waist, belly, hip, arms, thigh) is sized from its own measurement, so a slimmer
+// belly or thighs shows even when the scale doesn't move.
 type P = [number, number];
 
-function smoothClosed(pts: P[]) {
-  const n = pts.length; let d = `M${pts[0][0].toFixed(1)},${pts[0][1].toFixed(1)}`;
-  for (let i = 0; i < n; i++) {
-    const p0 = pts[(i - 1 + n) % n], p1 = pts[i], p2 = pts[(i + 1) % n], p3 = pts[(i + 2) % n];
-    const t = 0.18;
+/** Smooth open curve through points (Catmull-Rom → Bézier). */
+function curve(pts: P[]) {
+  let d = `M${pts[0][0].toFixed(1)},${pts[0][1].toFixed(1)}`;
+  for (let i = 0; i < pts.length - 1; i++) {
+    const p0 = pts[Math.max(0, i - 1)], p1 = pts[i], p2 = pts[i + 1], p3 = pts[Math.min(pts.length - 1, i + 2)];
+    const t = 0.2;
     d += ` C${(p1[0] + (p2[0] - p0[0]) * t).toFixed(1)},${(p1[1] + (p2[1] - p0[1]) * t).toFixed(1)} ${(p2[0] - (p3[0] - p1[0]) * t).toFixed(1)},${(p2[1] - (p3[1] - p1[1]) * t).toFixed(1)} ${p2[0].toFixed(1)},${p2[1].toFixed(1)}`;
   }
-  return d + "Z";
+  return d;
 }
-const mirror = (pts: P[]): P[] => pts.map(([x, y]) => [CX - x, y]);
-const right = (pts: P[]): P[] => pts.map(([x, y]) => [CX + x, y]);
+const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
 
-// Measurement heights on the figure.
-const Y: Record<Measure, number> = { chest: 128, waist: 172, belly: 200, hip: 232, arms: 140, thigh: 285 };
+/** All the strokes for one figure centred at cx. */
+function figure(e: MeasureEntry, k: number, cx: number) {
+  // Half the front width of the body at each spot: circumference ÷ π gives the "diameter"; the factor
+  // accounts for the body being wider than it is deep (more so at the hips).
+  const half = (c: number, f: number) => (c / Math.PI) * f * k;
+  const chest = half(e.chest, 0.5), waist = half(e.waist, 0.55), belly = half(e.belly, 0.56), hip = half(e.hip, 0.58);
+  const leg = (e.thigh / Math.PI) * 0.9 * k; // front width of one thigh
+  const aw = (e.arms / Math.PI) * 0.85 * k; // front width of the upper arm
+  const sh = Math.max(chest * 1.12, waist + 6, 46); // shoulders barely change with weight // shoulder half width
+  const R = (pts: P[]): P[] => pts.map(([x, y]) => [cx + x, y]);
+  const L = (pts: P[]): P[] => pts.map(([x, y]) => [cx - x, y]);
+  const g = 2;
 
-const LABEL_Y: Record<Measure, number> = { chest: 104, arms: 140, waist: 176, belly: 212, hip: 248, thigh: 292 };
-
-function shape(e: MeasureEntry, k: number) {
-  const half = (c: number) => (c / Math.PI) * 0.625 * k; // half the front width of a body part
-  const chest = half(e.chest), waist = half(e.waist), belly = half(e.belly), hip = half(e.hip);
-  const leg = (e.thigh / Math.PI) * 0.95 * k; // front width of one thigh
-  const aw = (e.arms / Math.PI) * 0.9 * k; // front width of the upper arm
-  const shoulder = Math.max(chest * 1.1, 40);
-  const g = 2.5;
+  // Arm hangs beside the body; centre line keeps clear of the torso at every height.
+  const armC: [number, number, number][] = [
+    [100, sh - aw * 0.1, aw * 1.0], [140, Math.max(chest + aw / 2 + 4, sh - aw * 0.05), aw],
+    [190, Math.max(waist + aw * 0.36 + 10, belly + aw * 0.36 + 6), aw * 0.7], [250, Math.max(hip + aw * 0.22 + 6, belly + aw * 0.3 + 8), aw * 0.42],
+    [276, Math.max(hip + aw * 0.22 + 7, belly + aw * 0.3 + 9), aw * 0.56], [292, Math.max(hip + aw * 0.22 + 6, belly + aw * 0.3 + 8), aw * 0.2],
+  ];
+  const armOuter: P[] = armC.map(([y, x, w]): P => [x + w / 2, y]);
+  const armInner: P[] = armC.map(([y, x, w]): P => [x - w / 2, y]).reverse();
+  // Neck → shoulder → down the outside of the arm → hand → up the inside → armpit.
+  const shoulderArm: P[] = [[7.5, 64], [8.5, 76], [sh * 0.62, 84], [sh, 95], ...armOuter, ...armInner.slice(1, -1), [chest * 0.98 + 1, 116]];
+  // Side of the body: armpit → bust → waist → belly → hip → outer leg → foot → inner leg → crotch.
   const side: P[] = [
-    [10, 60], [13, 76], [shoulder * 0.8, 84], [shoulder, 94], [chest * 0.97, 110], [chest, Y.chest], [(chest + waist) / 2 + 1, 150],
-    [waist, Y.waist], [belly, Y.belly], [hip, Y.hip], [Math.max(hip * 0.96, g + leg), 258], [g + leg * 0.98, Y.thigh], [g + leg * 0.62, 345],
-    [g + leg * 0.64, 384], [g + leg * 0.32, 432], [g + leg * 0.46, 450], [g + 3, 455], [g + 2, 434], [g + 1, 388], [g + 2, 345], [g + 1, 300], [0.5, 268],
+    [chest * 0.97, 112], [chest, 128], [(chest + waist) / 2 + 1, 150], [waist, 172], [belly, 200], [hip, 232], [Math.max(hip * 0.95, g + leg), 258],
+    [g + leg * 0.97, 286], [g + leg * 0.6, 345], [g + leg * 0.63, 384], [g + leg * 0.3, 432], [g + leg * 0.44, 449], [g + leg * 0.2, 455], [g + 2, 452],
+    [g + 2, 434], [g + 1, 388], [g + 2.5, 345], [g + 1, 296], [0.5, 270],
   ];
-  const torso = smoothClosed([...right(side), ...mirror(side).reverse()]);
-  // Arm: centre line + width at each height, hanging beside the body.
-  const c: [number, number, number][] = [
-    [96, shoulder - aw * 0.15, aw * 1.05], [Y.arms, Math.max(chest + aw / 2 + 3, shoulder - aw * 0.05), aw], [188, Math.max(waist + aw * 0.36 + 9, belly + aw * 0.2 + 4), aw * 0.72],
-    [255, Math.max(hip + aw * 0.22 + 6, belly + aw * 0.3 + 8), aw * 0.42], [282, Math.max(hip + aw * 0.22 + 7, belly + aw * 0.3 + 9), aw * 0.6], [298, Math.max(hip + aw * 0.22 + 7, belly + aw * 0.3 + 9), aw * 0.15],
-  ];
-  const outer: P[] = c.map(([y, x, w]): P => [x + w / 2, y]);
-  const inner: P[] = c.map(([y, x, w]): P => [x - w / 2, y]).reverse();
-  const arm: P[] = [[shoulder - 2, 89], ...outer, ...inner.slice(1)];
-  const arms = [smoothClosed(right(arm)), smoothClosed(mirror(arm))];
-  const edge: Record<Measure, number> = { chest, waist, belly, hip, arms: c[1][1] + aw / 2, thigh: g + leg };
-  return { torso, arms, edge };
+  // Bust: a soft curve under each breast, sized from how much bigger the chest is than the waist.
+  const r = clamp(((e.chest - e.waist) / Math.PI) * k * 0.4 + 6, 6, 22);
+  const bx = chest * 0.5;
+  const breast = (s: 1 | -1) => `M${cx + s * (bx - r * 0.95)},${126 - r * 0.15} Q${cx + s * (bx - r * 0.1)},${126 + r * 1.15} ${cx + s * (bx + r * 0.95)},${124 - r * 0.1}`;
+  // Tummy: a curve that grows with the belly measurement compared to the hips.
+  const bulge = clamp(((e.belly - e.hip * 0.82) / Math.PI) * k * 0.5, 0, 18);
+  const tummy = bulge > 2 ? `M${cx - belly * 0.72},${200} Q${cx},${206 + bulge * 1.4} ${cx + belly * 0.72},${200}` : "";
+  const navel = `M${cx - 2.5},${190} Q${cx},${193} ${cx + 2.5},${190}`;
+  const pelvis = `M${cx - hip * 0.38},${255} Q${cx},${270} ${cx + hip * 0.38},${255}`;
+  const knee = (s: 1 | -1) => { const x = cx + s * (g + leg * 0.32); return `M${x - 4},${343} Q${x},${347} ${x + 4},${343}`; };
+  // Head with a soft bob haircut.
+  const head = `M${cx},${18} C${cx + 12},${18} ${cx + 16},${30} ${cx + 15},${42} C${cx + 14},${54} ${cx + 7},${62} ${cx},${62} C${cx - 7},${62} ${cx - 14},${54} ${cx - 15},${42} C${cx - 16},${30} ${cx - 12},${18} ${cx},${18}Z`;
+  const hair = curve([[cx - 13, 62], [cx - 22, 56], [cx - 20, 44], [cx - 22, 28], [cx - 12, 13], [cx + 2, 10], [cx + 15, 14], [cx + 23, 28], [cx + 21, 44], [cx + 24, 56], [cx + 15, 61]]);
+  const fringe = curve([[cx - 15, 34], [cx - 6, 24], [cx + 6, 21], [cx + 15, 30]]);
+  return {
+    main: [curve(R(shoulderArm)), curve(L(shoulderArm)), curve(R(side)), curve(L(side))],
+    details: [breast(1), breast(-1), navel, pelvis, knee(1), knee(-1), tummy].filter(Boolean),
+    head: [head, hair, fringe],
+  };
+}
+
+function Figure({ e, k, cx, color, glow, ghost }: { e: MeasureEntry; k: number; cx: number; color: string; glow?: boolean; ghost?: MeasureEntry }) {
+  const f = figure(e, k, cx);
+  const g = ghost ? figure(ghost, k, cx) : null;
+  return (
+    <g>
+      {g && <g fill="none" stroke="#c084fc" strokeOpacity="0.45" strokeWidth="1.2" strokeDasharray="4 4">{g.main.map((d, i) => <path key={i} d={d} />)}</g>}
+      <g fill="none" stroke={color} strokeLinecap="round" strokeLinejoin="round" filter={glow ? "url(#lineGlow)" : undefined}>
+        {f.head.map((d, i) => <path key={i} d={d} strokeWidth="1.8" />)}
+        {f.main.map((d, i) => <path key={i} d={d} strokeWidth="2.2" />)}
+        {f.details.map((d, i) => <path key={i} d={d} strokeWidth="1.6" strokeOpacity="0.9" />)}
+      </g>
+    </g>
+  );
 }
 
 export function BodyOutline({ entries }: { entries: MeasureEntry[] }) {
   if (!entries.length) return null;
   const first = entries[0], latest = entries[entries.length - 1];
-  // Same scale for every outline, fitted to the biggest hip measurement.
-  const maxHip = Math.max(...entries.map((e) => e.hip || 100));
-  const k = 64 / ((maxHip / Math.PI) * 0.625);
-  const shapes = entries.map((e) => shape(e, k));
-  const now = shapes[shapes.length - 1], start = shapes[0];
-  const middle = shapes.slice(1, -1);
-  const measures: Measure[] = ["chest", "arms", "waist", "belly", "hip", "thigh"];
-  const r1 = (n: number) => Math.round(n * 10) / 10;
+  const both = entries.length > 1;
+  // A fixed real-world scale (px per cm, figure ≈ 165 cm tall), so slim measurements really look slim.
+  const k = 2.65;
+  const W = both ? 440 : 230;
+  const measures: Measure[] = ["chest", "waist", "belly", "hip", "arms", "thigh"];
+  const changed = measures.filter((m) => latest[m] < first[m]).length;
   return (
     <div>
-      <svg viewBox="0 0 470 470" className="w-full max-w-xl mx-auto block" role="img" aria-label="Body outline: your first measurements dashed, latest solid">
+      <svg viewBox={`0 0 ${W} 490`} className="w-full max-w-md mx-auto block" role="img" aria-label={both ? "Your figure on day 1 and now, drawn from your measurements" : "Your figure, drawn from your measurements"}>
         <defs>
-          <linearGradient id="bodyFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#22d3ee" stopOpacity="0.16" /><stop offset="100%" stopColor="#8b5cf6" stopOpacity="0.06" /></linearGradient>
-          <filter id="bodyGlow" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="2.5" result="b" /><feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge></filter>
+          <filter id="lineGlow" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="2" result="b" /><feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge></filter>
         </defs>
-        <circle cx={CX} cy={36} r={20} fill="none" stroke="#22d3ee" strokeOpacity="0.8" strokeWidth="1.6" />
-        {entries.length > 1 && (
-          <g fill="none" stroke="#c084fc" strokeWidth="1.4" strokeDasharray="5 4" strokeOpacity="0.75">
-            <path d={start.torso} />{start.arms.map((d, i) => <path key={i} d={d} />)}
-          </g>
-        )}
-        {middle.map((s, i) => <g key={i} fill="none" stroke="#a78bfa" strokeOpacity="0.22" strokeWidth="1"><path d={s.torso} />{s.arms.map((d, j) => <path key={j} d={d} />)}</g>)}
-        <g fill="url(#bodyFill)" stroke="#22d3ee" strokeWidth="2" filter="url(#bodyGlow)">
-          {now.arms.map((d, i) => <path key={i} d={d} />)}<path d={now.torso} />
-        </g>
-        {measures.map((m) => {
-          const y = Y[m];
-          const ly = LABEL_Y[m];
-          const x0 = CX + Math.max(now.edge[m], start.edge[m]) + 6;
-          const ch = r1(latest[m] - first[m]);
-          return (
-            <g key={m}>
-              <polyline points={`${x0},${y} ${x0 + 12},${y} 296,${ly}`} fill="none" stroke="var(--muted)" strokeOpacity="0.4" strokeDasharray="2 3" />
-              <text x={306} y={ly - 2} fontSize="12" fill="var(--fg)" fontWeight="600">{MEASURE_LABEL[m]} {r1(latest[m])} cm</text>
-              {entries.length > 1 && <text x={306} y={ly + 12} fontSize="11" fill={ch < 0 ? "#34d399" : ch > 0 ? "#fbbf24" : "var(--muted)"}>{ch < 0 ? `▼ ${-ch} cm` : ch > 0 ? `▲ ${ch} cm` : "no change"} since day 1</text>}
-            </g>
-          );
-        })}
+        {both && <Figure e={first} k={k} cx={112} color="#c4b5fd" />}
+        <Figure e={latest} k={k} cx={both ? 328 : 115} color="#67e8f9" glow ghost={both ? first : undefined} />
+        {both && <text x={112} y={482} textAnchor="middle" fontSize="13" fill="#c4b5fd" fontWeight="600">Day 1 · {prettyDate(first.date, { day: "numeric", month: "short" })}</text>}
+        <text x={both ? 328 : 115} y={482} textAnchor="middle" fontSize="13" fill="#67e8f9" fontWeight="600">Now · {prettyDate(latest.date, { day: "numeric", month: "short" })}</text>
       </svg>
-      <div className="flex flex-wrap justify-center gap-4 text-xs muted mt-1">
-        {entries.length > 1 && <span className="flex items-center gap-1.5"><svg width="22" height="6"><line x1="0" y1="3" x2="22" y2="3" stroke="#c084fc" strokeWidth="1.6" strokeDasharray="5 4" /></svg>Day 1 ({prettyDate(first.date, { day: "numeric", month: "short", year: "numeric" })})</span>}
-        {entries.length > 2 && <span className="flex items-center gap-1.5"><svg width="22" height="6"><line x1="0" y1="3" x2="22" y2="3" stroke="#a78bfa" strokeOpacity="0.4" /></svg>In between</span>}
-        <span className="flex items-center gap-1.5"><svg width="22" height="6"><line x1="0" y1="3" x2="22" y2="3" stroke="#22d3ee" strokeWidth="2" /></svg>Now ({prettyDate(latest.date, { day: "numeric", month: "short", year: "numeric" })})</span>
-      </div>
+      {both && <p className="text-xs muted text-center mt-1">Drawn to scale from your measurements. The dashed line on “Now” is your Day 1 outline{changed ? `, so you can see the ${changed} spot${changed > 1 ? "s" : ""} that got smaller` : ""}.</p>}
     </div>
   );
 }
