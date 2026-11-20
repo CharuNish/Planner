@@ -15,7 +15,7 @@ Until each part is connected, that tab shows **sample data**, so you can do thes
 
 ## 1. Create your Google Sheets
 
-The `templates/` folder has two files: **Finance-template.xlsx** and **Studies-template.xlsx**.
+The `templates/` folder has two files: **Finance-template.xlsx** and **Studies-template.xlsx**. (Finance-template now has an **Investments** tab too; you don't need to re-import it, the app adds that tab to your existing sheet automatically.)
 
 For each one:
 
@@ -31,6 +31,7 @@ For each one:
 | **Transactions** | Date · Type · Category · Amount · Description · Method | One row per income or expense. Type is `Income` or `Expense`. Amounts are positive numbers. |
 | **Budgets** | Category · Monthly Budget | One row per spending category. Use the same category names as in Transactions. |
 | **Bills** | Name · Amount · Type · Frequency · Next Due · Category | Type: `Bill` / `Subscription` / `Payment`. Frequency: `Weekly`, `Monthly`, `Quarterly`, `Yearly` or `Once`. You only need to set the first due date; the planner works out the next ones. |
+| **Investments** | Name · Type · Institution · Amount · Rate % · Start Date · Term (Months) · Maturity Date · Interest Payout · Auto Renew · Current Value · Status · Notes | FDs, planned FDs, T-bills, unit trusts, shares, gold, savings. Created for you automatically. See step 13. |
 
 ### Studies sheet tabs
 
@@ -222,6 +223,39 @@ If you had the older Content tabs (Queue, Posts, Captions, Channels), you can de
 
 Your Apple Watch data can flow into the **💪 Body & Health** tab and the 7 AM Telegram recap every night, for free, using an iPhone Shortcut.
 Follow **[APPLE-WATCH.md](APPLE-WATCH.md)** (about 20 minutes, once). New Vercel setting: `HEALTH_KEY` (optional: `STEP_GOAL`, `MOVE_GOAL_KCAL`, `EXERCISE_GOAL_MIN`, `AGE`).
+
+## 13. Fixed deposits & investments (Finance tab)
+
+**No new settings needed.** Open the 💰 Finance page once and a new **Investments** tab appears in your Finance sheet by itself (with dropdowns). Scroll to **🏦 Savings & investments** at the bottom of the Finance page.
+
+**Add an FD (easiest way):** press **+ Add FD / investment** on the Finance page, fill it in, Save. It goes straight into the sheet.
+
+**Or type it into the sheet.** One row per FD / investment:
+
+| Column | What to put | Example |
+|---|---|---|
+| Name | Anything that helps you recognise it | `FD 12 months` |
+| Type | Pick from the dropdown: `Fixed Deposit`, `Treasury Bill`, `Treasury Bond`, `Unit Trust`, `Stocks (CSE)`, `Gold`, `Savings Account`, `Other` | `Fixed Deposit` |
+| Institution | The bank or company | `Commercial Bank` |
+| Amount | The money you put in (just the number, no "Rs") | `500000` |
+| Rate % | Yearly interest rate from your FD certificate (FDs, T-bills, bonds, savings only) | `10.5` |
+| Start Date | The day the FD started | `2026-01-15` |
+| Term (Months) | How long it's locked for. **Or** leave this empty and fill Maturity Date instead | `12` |
+| Maturity Date | Optional if you filled Term. Needed for T-bills (e.g. 91 days) | `2027-01-15` |
+| Interest Payout | `At Maturity`, `Monthly` or `Yearly` (how the bank pays the interest) | `At Maturity` |
+| Auto Renew | `Yes` if the bank renews it automatically when it ends | `No` |
+| Current Value | **Only for shares, unit trusts and gold**: what it's worth today. Update it whenever you check the price. Leave empty for FDs | `161200` |
+| Status | `Active` (running now), `Planned` (an FD you want to open later), `Matured` or `Withdrawn` (finished, kept for history) | `Active` |
+| Notes | Anything: certificate number, what the money is for | |
+
+**Planned / future FDs:** add a row with Status `Planned` and the date you plan to open it as the Start Date. It shows under 🌱 Planned with a countdown and the money you'll have at the end. When you actually open it, change Status to `Active` (and fix the rate/date if they changed).
+
+**When an FD ends:** if it auto-renews, the planner rolls it into the next term by itself. If not, it reminds you; then either change Status to `Matured`, or add a new row for the renewed FD.
+
+**What you'll see:** total worth today, interest earned so far, interest you'll get this term, next maturity countdown, a "where your money is" chart, upcoming maturities with progress bars, all holdings, and planned FDs.
+**Morning message:** the 7 AM Telegram to-do list now also says when an FD matures within 7 days, when a planned FD is due to start within 3 days, and when one has matured and is waiting for you.
+
+Interest is worked out simply (amount × rate × days ÷ 365), before tax, so it can be a few rupees off your bank's figure. Your bank's slip is always the final word.
 
 ## Running it on your laptop (optional, for tinkering)
 

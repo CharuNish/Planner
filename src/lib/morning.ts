@@ -6,6 +6,7 @@ import { loadEvents, type CalEvent } from "./calendar";
 import { config, contentIsDemo } from "./config";
 import { addDays, daysBetween, todayISO } from "./dates";
 import { fmt, loadFinance, upcomingBills } from "./finance";
+import { investmentTodos, loadInvestments } from "./investments";
 import { geminiJSON, hasGemini } from "./gemini";
 import { dailyShuffle } from "./hype";
 import { analyseHabits, analyseMeasurements, analyseWeight, loadHabits, loadWins, loadMeasurements, loadWeight, MEASURE_LABEL, MEASURES } from "./life";
@@ -92,6 +93,7 @@ export async function gatherMorningFacts(): Promise<MorningFacts> {
       budgetLeftPerDay: null,
     };
     for (const b of upcomingBills(fin.bills, 3)) todos.push({ icon: "🧾", text: `Pay ${b.name} ${fmt(b.amount)} (${when(daysBetween(today, b.due))})` });
+    if (!fin.demo) todos.push(...investmentTodos((await loadInvestments().catch(() => null))?.items ?? [])); // FD maturities this week
   }
   if (wt) {
     const e = wt.entries.find((x) => x.date === y);

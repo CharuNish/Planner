@@ -4,11 +4,14 @@ import { DemoBanner, Empty, PageHeader, ProgressBar, Section, Stat } from "@/com
 import { config } from "@/lib/config";
 import { daysBetween, prettyDate, relativeDays, todayISO } from "@/lib/dates";
 import { analyseFinance, fmt, loadFinance, upcomingBills } from "@/lib/finance";
+import { InvestmentsSection } from "@/components/investments";
+import { loadInvestments } from "@/lib/investments";
 
 export const dynamic = "force-dynamic";
 
 export default async function FinancePage() {
   let data;
+  const inv = loadInvestments().then((r) => ({ items: r.items, error: "" }), (e) => ({ items: [], error: String(e).slice(0, 300) }));
   try { data = await loadFinance(); } catch (e) {
     return <div><PageHeader title="💰 Finance" /><div className="card p-5 text-bad text-sm">Couldn&apos;t read your finance sheet: {String(e).slice(0, 300)}</div></div>;
   }
@@ -18,6 +21,7 @@ export default async function FinancePage() {
   const monthName = prettyDate(a.month + "-01", { month: "long", year: "numeric" });
   const cats = [...new Set(data.txns.map((t) => t.category))];
   const pctTime = a.dom / a.dim;
+  const investments = await inv;
 
   return (
     <div className="space-y-5">
@@ -107,6 +111,9 @@ export default async function FinancePage() {
           </ul>
         </Section>
       </div>
+      {investments.error
+        ? <div className="card p-5 text-bad text-sm">Couldn&apos;t read the Investments tab: {investments.error}</div>
+        : <InvestmentsSection items={investments.items} />}
     </div>
   );
 }
