@@ -1,5 +1,6 @@
 import { type Measure, type MeasureEntry } from "@/lib/life";
 import { prettyDate } from "@/lib/dates";
+import { config } from "@/lib/config";
 
 // Line-art figures drawn from your measurements: "Day 1" and "Now" side by side, on the SAME scale.
 // Each part (chest, waist, belly, hip, arms, thigh) is sized from its own measurement, so a slimmer
@@ -87,8 +88,9 @@ export function BodyOutline({ entries }: { entries: MeasureEntry[] }) {
   if (!entries.length) return null;
   const first = entries[0], latest = entries[entries.length - 1];
   const both = entries.length > 1;
-  // A fixed real-world scale (px per cm, figure ≈ 165 cm tall), so slim measurements really look slim.
-  const k = 2.65;
+  // Real-world scale: the figure is drawn ~440 px tall, so px-per-cm comes from your height (HEIGHT_CM).
+  // A shorter person with the same measurements looks wider, just like in real life.
+  const k = 440 / (config.heightCm > 120 && config.heightCm < 220 ? config.heightCm : 166);
   const W = both ? 440 : 230;
   const measures: Measure[] = ["chest", "waist", "belly", "hip", "arms", "thigh"];
   const changed = measures.filter((m) => latest[m] < first[m]).length;
