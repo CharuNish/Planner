@@ -10,6 +10,7 @@ import { analyseStudies, loadStudies } from "@/lib/studies";
 import { CountUp, Ring } from "@/components/fx";
 import { analyseHabits, analyseWeight, getCountdown, loadHabits, loadWeight } from "@/lib/life";
 import { Countdown } from "@/components/countdown";
+import { SendMorningButton, WinForm } from "@/components/wins";
 
 export const dynamic = "force-dynamic";
 
@@ -66,6 +67,10 @@ export default async function Home() {
         </div>
       </section>
       <Countdown date={cd.date} label={cd.label} />
+      <Section title="🏆 Did something special today? Log a win" action={<Link href="/wins" className="text-xs text-accent">All wins →</Link>}>
+        <WinForm compact />
+        <div className="mt-4 pt-4 border-t" style={{ borderColor: "var(--border)" }}><SendMorningButton /></div>
+      </Section>
       {anyDemo && <div className="rounded-xl px-4 py-3 text-sm soft">👀 Some tabs show <b>sample data</b> until your Google Sheets and Calendar are connected (see SETUP.md).</div>}
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">

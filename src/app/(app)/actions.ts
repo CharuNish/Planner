@@ -138,3 +138,37 @@ export async function retryDaily(f: FormData) {
   revalidateTag(`daily-${key}`);
   revalidatePath("/updates"); revalidatePath("/opportunities"); revalidatePath("/content");
 }
+
+// ───── Wins ─────
+export async function addWin(_: Result, f: FormData): Promise<Result> {
+  const n = needLife(); if (n) return n;
+  const text = String(f.get("text") || "").trim();
+  if (!text) return { error: "What did you do? Write it down, queen 👑" };
+  const date = String(f.get("date") || todayISO());
+  let photo = String(f.get("photoUrl") || "").trim();
+  const file = f.get("photo");
+  if (file instanceof File && file.size > 0) {
+    if (!process.env.BLOB_READ_WRITE_TOKEN) return { error: "Photo uploads need the free Vercel Blob storage switched on first (SETUP.md, 'Wins photos'). You can save the win without a photo for now." };
+    if (file.size > 4 * 1024 * 1024) return { error: "That photo is too big (max 4 MB)." };
+    try {
+      const { put } = await import("@vercel/blob");
+      const ext = file.type === "image/png" ? "png" : file.type === "image/webp" ? "webp" : "jpg";
+      const blob = await put(`wins/${date}-${text.slice(0, 30).replace(/[^a-z0-9]+/gi, "-").toLowerCase()}.${ext}`, file, { access: "public", addRandomSuffix: true, contentType: file.type || "image/jpeg" });
+      photo = blob.url;
+    } catch (e) { return { error: `Photo upload failed: ${String(e).slice(0, 160)}` }; }
+  }
+  try { await appendRowCreatingTab(config.google.lifeSheetId, "Wins", ["Date", "Win", "Category", "Photo"], [date, text, String(f.get("category") || "Other"), photo]); }
+  catch (e) { return { error: String(e) }; }
+  revalidatePath("/", "layout");
+  return { ok: "Saved! I'll brag about this in tomorrow's morning message 😘" };
+}
+
+/** Sends the morning bestie message right now (to test it). */
+export async function sendMorningNow(): Promise<Result> {
+  try {
+    const { buildMorningMessage, sendTelegram } = await import("@/lib/morning");
+    const m = await buildMorningMessage();
+    await sendTelegram(m.text);
+    return { ok: m.ai ? "Sent! Check Telegram 💌" : `Sent (built-in voice${m.aiError ? `, Gemini said: ${m.aiError.slice(0, 120)}` : ""}). Check Telegram 💌` };
+  } catch (e) { return { error: String(e).slice(0, 200) }; }
+}

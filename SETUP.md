@@ -202,6 +202,22 @@ If you had the older Content tabs (Queue, Posts, Captions, Channels), you can de
 
 ---
 
+## 11. Wins page + the bestie morning message
+
+**Wins (no setup needed).** Open the 🏆 Wins tab (or the box on Home), write what you did, pick a category, Save. The first save creates a **Wins** tab in your Life sheet by itself (columns: Date, Win, Category, Photo). You can also type wins straight into that tab.
+
+**Photos (one-time, free, about 2 minutes).** Photos are saved in Vercel's free storage (Vercel Blob, 1 GB free on the Hobby plan; photos are shrunk to about 300 KB, so that's thousands of photos).
+1. Go to vercel.com, open your **planner** project.
+2. Click the **Storage** tab, then **Create Database** (or **Create**), choose **Blob**, click Continue.
+3. Name it `wins-photos`. If it asks for access, choose **Public**. Click **Create**.
+4. When it asks which environments to connect, keep all ticked and click **Connect**. This adds `BLOB_READ_WRITE_TOKEN` for you, nothing to copy.
+5. Go to **Deployments**, click the ⋯ next to the newest one, **Redeploy**. Done: the 📸 Add photo button now works.
+(Photo links are long random addresses, so nobody can guess them, but anyone you send a link to can open that photo.)
+
+**Morning message.** Every day at 7:00 AM (Sri Lanka) Telegram gets a bestie-style recap of yesterday (study hours vs goal, tasks ticked off, gym/sleep/water, money spent, weight and measurements, posts and collabs, calendar events, and your Wins) plus today's to-do list (calendar, deadlines this week, top study tasks, bills due in 3 days, collabs, posting nudges).
+- It uses your existing `GEMINI_API_KEY` for one short call per morning. If Gemini is busy or out of free quota, a built-in bestie voice writes it instead, so it always arrives.
+- To test it any time: Home page → **💌 Send me the morning message now**.
+
 ## Running it on your laptop (optional, for tinkering)
 
 1. Install [Node.js](https://nodejs.org) (the LTS version).
