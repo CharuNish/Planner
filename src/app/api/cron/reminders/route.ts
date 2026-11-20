@@ -54,7 +54,7 @@ export async function GET(req: Request) {
   if (!contentIsDemo()) {
     try {
       const c = await loadContent();
-      const a = analyseContent(c.followers, c.uploads, c.collabs, today);
+      const a = analyseContent(c.followers, c.uploads, c.collabs, today, c.goals);
       const out: string[] = [];
       for (const ch of CHANNELS) {
         const n = a.nudges.filter((x) => x.channel === ch);

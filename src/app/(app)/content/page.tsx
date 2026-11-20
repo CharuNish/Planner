@@ -1,5 +1,5 @@
 import { Dancing_Script } from "next/font/google";
-import { ContentTrends } from "@/components/content-charts";
+import { CollabMonthsChart, ContentTrends } from "@/components/content-charts";
 import { FollowersForm } from "@/components/content-forms";
 import { CountUp } from "@/components/fx";
 import { config } from "@/lib/config";
@@ -52,13 +52,15 @@ function DaysBubble({ days, label }: { days: number | null; label: string }) {
 
 export default async function ContentPage() {
   const data = await loadContent();
-  const a = analyseContent(data.followers, data.uploads, data.collabs);
+  const a = analyseContent(data.followers, data.uploads, data.collabs, todayISO(), data.goals);
   const today = todayISO();
   const sheetUrl = config.google.contentSheetId ? `https://docs.google.com/spreadsheets/d/${config.google.contentSheetId}/edit` : "";
   const totalFollowers = a.totals.reduce((s, t) => s + t.followers, 0);
   const gained = a.totals.reduce((s, t) => s + t.change30, 0);
   const likesDiff = a.likesThisMonth - a.likesLastMonth;
   const maxTypeLikes = Math.max(1, ...a.byType.map((t) => t.avgLikes));
+  const maxDayLikes = Math.max(1, ...a.byWeekday.map((d) => d.avgLikes));
+  const maxEngaged = Math.max(0.01, ...a.engaged.map((x) => x.likesPer100 || 0));
 
   return (
     <div className="girly space-y-5">
@@ -94,7 +96,7 @@ export default async function ContentPage() {
         <Stat label="🎀 Posts this month" value={<CountUp value={a.postsThisMonth} />} hint={a.earned || a.pending ? `${money(a.earned)} earned from collabs` : "keep going, you're doing great"} />
       </div>
 
-      <Card title="🌸 Followers on each account" sub="Latest number from your Followers tab, and the change since the check before" action={<FollowersForm accounts={a.accounts.map((x) => ({ channel: x.channel, platform: x.platform, followers: x.followers }))} />}>
+      <Card title="🌸 Followers on each account" sub="Latest number, change since the check before, and your goal (set goals in the Follower Goals tab)" action={<FollowersForm accounts={a.accounts.map((x) => ({ channel: x.channel, platform: x.platform, followers: x.followers }))} />}>
         <div className="grid md:grid-cols-2 gap-4">
           {CHANNELS.map((c) => (
             <div key={c} className="rounded-2xl p-4" data-tile="">
@@ -105,6 +107,12 @@ export default async function ContentPage() {
                     <div className="text-xs muted">{PLATFORM_ICON[x.platform]} {x.platform}</div>
                     <div className="text-xl font-semibold tabular" style={{ fontFamily: "var(--font-display)" }}>{x.followers === null ? "–" : k(x.followers)}</div>
                     <div className="text-[11px] muted">{x.followers === null ? "not logged yet" : <><span className={x.change > 0 ? "text-good" : x.change < 0 ? "text-bad" : ""}>{signed(x.change)}</span> · {prettyDate(x.checked!, { day: "numeric", month: "short" })}</>}</div>
+                    {x.goal > 0 && (
+                      <div className="mt-2">
+                        <div className="bar" role="progressbar" aria-valuenow={Math.round(x.progress * 100)} aria-valuemin={0} aria-valuemax={100} aria-label={`${x.platform} goal`}><span style={{ width: `${x.progress * 100}%`, background: "linear-gradient(90deg,#f9a8d4,#f472b6)", color: "#f472b6" }} /></div>
+                        <div className="text-[11px] muted mt-1">🎯 {k(x.goal)}{x.goalSet ? "" : " (next milestone)"} · {Math.round(x.progress * 100)}%{x.progress >= 1 ? " 🎉" : ""}</div>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -163,12 +171,46 @@ export default async function ContentPage() {
         </Card>
       </div>
 
+      <div className="grid lg:grid-cols-2 gap-5">
+        <Card title="💞 Whose audience loves you most" sub="Average likes on the last 10 posts, per 100 followers">
+          {!a.engaged.length ? <p className="text-sm muted">Needs follower counts and likes for the same account. Once both are in, I&apos;ll rank your accounts here.</p> : (
+            <div className="space-y-2.5">
+              {a.engaged.map((x, i) => (
+                <div key={x.channel + x.platform} className="grid grid-cols-[8rem_1fr_3rem] items-center gap-2 text-sm">
+                  <span className="leading-tight">{PLATFORM_ICON[x.platform]} {x.platform}{i === 0 ? " 👑" : ""}<span className="block text-[11px] muted">{x.channel}</span></span>
+                  <div className="bar"><span style={{ width: `${((x.likesPer100 || 0) / maxEngaged) * 100}%`, background: PLATFORM_COLOR[x.platform], color: PLATFORM_COLOR[x.platform] }} /></div>
+                  <span className="tabular text-right text-xs">{(x.likesPer100 || 0).toFixed(1)}</span>
+                </div>
+              ))}
+              <p className="text-xs muted pt-1">e.g. 5.0 means a post gets about 5 likes for every 100 followers.</p>
+            </div>
+          )}
+        </Card>
+        <Card title="📅 Best day to post" sub="Average likes per post, by the day it went up">
+          {!a.bestDay ? <p className="text-sm muted">Log a few uploads with likes and I&apos;ll find your lucky day 🍀</p> : (
+            <>
+              <p className="text-sm mb-3">Your posts do best on <b>{({ Mon: "Mondays", Tue: "Tuesdays", Wed: "Wednesdays", Thu: "Thursdays", Fri: "Fridays", Sat: "Saturdays", Sun: "Sundays" } as Record<string, string>)[a.bestDay.day]}</b> 💫 Save your favourite posts for then.</p>
+              <div className="flex items-end gap-2 h-32" role="img" aria-label="Average likes by weekday">
+                {a.byWeekday.map((d) => (
+                  <div key={d.day} className="flex-1 flex flex-col items-center justify-end gap-1 h-full" title={`${d.day}: ${d.avgLikes.toLocaleString()} avg likes (${d.posts} posts)`}>
+                    <span className="text-[10px] muted tabular">{d.posts ? k(d.avgLikes) : ""}</span>
+                    <div className="w-full max-w-8 rounded-t-md" style={{ height: `${Math.max(d.posts ? 6 : 2, (d.avgLikes / maxDayLikes) * 100)}%`, background: d.day === a.bestDay!.day ? "linear-gradient(180deg,#f472b6,#e64596)" : "rgba(244,114,182,.28)" }} />
+                    <span className={`text-xs ${d.day === a.bestDay!.day ? "font-semibold" : "muted"}`}>{d.day}</span>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </Card>
+      </div>
+
       <Card title="🤝 Collabs" sub="From your Collabs tab">
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-5">
           <div className="rounded-xl p-3" data-tile=""><div className="kicker">Earned</div><div className="text-lg font-semibold tabular">{money(a.earned)}</div></div>
           <div className="rounded-xl p-3" data-tile=""><div className="kicker">Waiting to be paid</div><div className="text-lg font-semibold tabular">{money(a.pending)}</div></div>
           <div className="rounded-xl p-3 col-span-2 md:col-span-1" data-tile=""><div className="kicker">Open collabs</div><div className="text-lg font-semibold tabular">{a.openCollabs.length}</div></div>
         </div>
+        <div className="mb-5"><div className="kicker mb-2">Collab money per month</div><CollabMonthsChart data={a.collabMonths} currency={config.currency} /></div>
         {a.dueSoon.length > 0 && <p className="text-sm text-warn mb-3">⏰ Due soon: {a.dueSoon.map((c) => `${c.brand} (${daysBetween(today, c.due) < 0 ? "overdue" : daysBetween(today, c.due) === 0 ? "today" : `in ${daysBetween(today, c.due)} days`})`).join(", ")}</p>}
         {!data.collabs.length ? <p className="text-sm muted">No collabs yet. When a brand reaches out, add a row to the Collabs tab 💼</p> : (
           <div className="overflow-x-auto -mx-1">
