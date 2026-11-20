@@ -160,7 +160,9 @@ async function youtubeChannels(): Promise<YTChannel[]> {
     };
   }));
 }
-export const getYouTubeChannels = daily("my-youtube", youtubeChannels);
+// The settings are part of the cache key, so adding or changing YOUTUBE_CHANNELS / YOUTUBE_API_KEY
+// in Vercel takes effect right away instead of tomorrow.
+export const getYouTubeChannels = daily("my-youtube", youtubeChannels, `${process.env.YOUTUBE_CHANNELS || ""}|${(process.env.YOUTUBE_API_KEY || "").slice(-6)}`);
 
 // ───── Trends (free, no AI): Google Trends Sri Lanka + YouTube trending in Sri Lanka ─────
 export type Trend = { title: string; traffic: string; link: string; source: "Google" | "YouTube" };

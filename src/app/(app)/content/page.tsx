@@ -181,6 +181,7 @@ export default async function ContentPage() {
 
       <div className="grid lg:grid-cols-2 gap-5">
         <Section title="👥 Follower growth" action={<FollowersForm accounts={accountsForForm} />}>
+          {!yt.ok && <div className="mb-4"><FeedError msg={`YouTube: ${yt.error}`} retryKey="my-youtube" /></div>}
           {a.growth.length > 1 ? <FollowerGrowthChart data={a.growth} channels={a.channelNames.filter((c) => a.totals.some((t) => t.channel === c))} /> : <Empty>Log your follower counts once a week to see growth here.</Empty>}
           {a.accounts.length > 0 && (
             <div className="grid grid-cols-2 gap-2 mt-4">
