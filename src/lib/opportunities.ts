@@ -67,7 +67,7 @@ async function allOpportunities() {
   let found: Opportunity[] = [];
   const errors: string[] = [];
   if (hasGemini()) {
-    try { found = await webSearch(); } catch (e) { errors.push(String(e instanceof Error ? e.message : e).slice(0, 300)); }
+    try { found = await webSearch(); } catch (e) { errors.push(String(e instanceof Error ? e.message : e).slice(0, 600)); }
   }
   // A good search is saved; a failed or empty one falls back to the last good list (only what's still open).
   let staleFrom: string | null = null;
@@ -91,4 +91,4 @@ async function allOpportunities() {
 }
 
 const LAST_GOOD_KEY = "opportunities";
-export const getOpportunities = daily("opportunities-c", allOpportunities);
+export const getOpportunities = daily("opportunities-d", allOpportunities);
