@@ -194,6 +194,11 @@ A tiny helper runs quietly on your Mac. Whenever you put a **video**, an **image
    bash ~/Downloads/install-content-sync.command
    ```
 4. Press Enter to keep the website address, then paste your **CRON_SECRET** (the same value as in Vercel; it stays invisible while you paste) and press Enter.
+   Want your folders somewhere else (for example on your Desktop)? Put the folder path in quotes at the end instead:
+   ```
+   bash ~/Downloads/install-content-sync.command "$HOME/Desktop/Social Media"
+   ```
+   (If you use a Desktop or Documents folder, macOS may need you to allow it once: **System Settings → Privacy & Security → Full Disk Access → +**, press **⌘⇧G**, type `/bin/bash`, press **Open**, and switch it on.)
 5. It says **✅ All set!** and opens your new **Content** folder (in your home folder) with one folder per account: `Life with C - Instagram`, `Ane Manda - TikTok`, etc. Drag it to the Finder sidebar for easy access.
 
 **Tips**
