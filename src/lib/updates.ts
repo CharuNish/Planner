@@ -96,6 +96,17 @@ async function topPapers(): Promise<Paper[]> {
 }
 
 // ───────────────────────── Medium ─────────────────────────
+const EN_WORDS = new Set("the a an and or of to in is are was were for on with that this it as be by from at you your how what why can will not we they our more have has".split(" "));
+const FOREIGN_WORDS = /\b(el|la|los|las|de|del|que|para|una|com|não|uma|und|der|die|das|ist|nicht|les|des|une|pour|est|dan|yang|untuk|dengan|ini|itu|adalah|di|ke|dari|het|een|voor|mit|zu|auf)\b/gi;
+export function looksEnglish(text: string) {
+  if (/[^\u0000-\u024F\u2000-\u206F\u20A0-\u20CF\u2100-\u214F\u2190-\u21FF\u2600-\u27BF\u{1F000}-\u{1FAFF}]/u.test(text)) return false; // non-Latin letters
+  const words = text.toLowerCase().match(/[a-zà-ÿ']+/g) || [];
+  if (words.length < 4) return true;
+  const en = words.filter((w) => EN_WORDS.has(w)).length;
+  const foreign = (text.match(FOREIGN_WORDS) || []).length;
+  return en >= foreign && en / words.length >= 0.06;
+}
+
 export type Article = { title: string; url: string; author: string; tag: string; image: string; snippet: string; published: string; why: string };
 
 async function mediumPicks(): Promise<Article[]> {
@@ -113,12 +124,14 @@ async function mediumPicks(): Promise<Article[]> {
       }
     } catch { /* this tag failed */ }
   }));
+  // English only: drop articles in other scripts or other languages.
+  for (let i = all.length - 1; i >= 0; i--) if (!looksEnglish(`${all[i].title} ${all[i].snippet}`)) all.splice(i, 1);
   if (!all.length) throw new Error("Couldn't reach Medium");
   if (hasGemini()) {
     try {
       const { data } = await geminiJSON<{ i: number; why: string }[]>(
         `${PLAIN}\nPick the 5 best Medium articles for someone into XAI, computer vision, neuroscience, psychology and investing. ` +
-        `Prefer in-depth, well-written pieces; skip spammy, listicle or promotional ones. Mix topics.\nReturn JSON: [{"i": <number>, "why": "one short line"}]\n\n` +
+        `Prefer in-depth, well-written pieces; skip spammy, listicle or promotional ones. Mix topics. Only pick articles written in English.\nReturn JSON: [{"i": <number>, "why": "one short line"}]\n\n` +
         all.map((a, i) => `${i}. [${a.tag}] ${a.title} by ${a.author}: ${a.snippet.slice(0, 200)}`).join("\n"));
       const picked = data.map((d) => all[d.i] && { ...all[d.i], why: d.why }).filter(Boolean) as Article[];
       if (picked.length >= 3) return picked.slice(0, 5);
@@ -161,5 +174,5 @@ async function youtubePicks(): Promise<Video[]> {
 
 export const getTrending = daily("github-trending-v2", trendingRepos);
 export const getPapers = daily("papers-v2", topPapers);
-export const getMedium = daily("medium-v2", mediumPicks);
+export const getMedium = daily("medium-v3", mediumPicks);
 export const getVideos = daily("youtube-v3", youtubePicks);
