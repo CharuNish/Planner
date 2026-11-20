@@ -28,7 +28,7 @@ export type Recap = {
   money: { spent: number; topSpends: string[]; income: number; budgetLeftPerDay: number | null } | null;
   weight: { kg: number; change: number | null; lostTotal: number; toGoal: number | null } | null;
   measured: string | null;
-  watch: { steps: number | null; stepGoal: number; km: number | null; activeKcal: number | null; exerciseMin: number | null; workouts: string[]; restingHr: number | null; avgHr: number | null; maxHr: number | null; avgSteps7: number | null } | null;
+  watch: { steps: number | null; stepGoal: number; workoutMin: number; km: number | null; activeKcal: number | null; exerciseMin: number | null; workouts: string[]; restingHr: number | null; avgHr: number | null; maxHr: number | null; avgSteps7: number | null } | null;
   posts: string[];
   collabs: string[];
   events: string[];
@@ -112,7 +112,7 @@ export async function gatherMorningFacts(): Promise<MorningFacts> {
   if (hea) {
     const a = analyseHealth(hea.days, today);
     const d = a.yesterday;
-    if (d) rec.watch = { steps: d.steps, stepGoal: config.stepGoal, km: d.distanceKm, activeKcal: d.activeKcal, exerciseMin: d.exerciseMin, workouts: d.workouts.map((w) => `${w.type} ${Math.round(w.minutes)} min`), restingHr: d.restingHr, avgHr: d.avgHr, maxHr: d.maxHr, avgSteps7: a.avgSteps7 ? Math.round(a.avgSteps7) : null };
+    if (d) rec.watch = { steps: d.steps, stepGoal: config.stepGoal, workoutMin: Math.round(d.workouts.reduce((x, w) => x + w.minutes, 0)), km: d.distanceKm, activeKcal: d.activeKcal, exerciseMin: d.exerciseMin, workouts: d.workouts.map((w) => `${w.type} ${Math.round(w.minutes)} min`), restingHr: d.restingHr, avgHr: d.avgHr, maxHr: d.maxHr, avgSteps7: a.avgSteps7 ? Math.round(a.avgSteps7) : null };
     if (a.daysSinceSync !== null && a.daysSinceSync >= 2) todos.push({ icon: "⌚", text: `Your Apple Watch hasn't synced for ${a.daysSinceSync} days. Open Shortcuts and tap "Sync Health to Dashboard"` });
   }
   if (hl) rec.highlights = hl.items.filter((h) => h.date === y).map((h) => (h.photo ? `${h.text} (with a photo 📸)` : h.text));
@@ -162,20 +162,25 @@ export function fallbackVoice(f: MorningFacts): Voice {
   }
   const wa = r.watch;
   if (wa) {
-    const k = (x: number) => Math.round(x).toLocaleString("en-US");
-    if (wa.steps !== null) {
+    // Short and fun: one line for the workout, one for the steps. No stats dump.
+    const k = (x: number) => (x >= 1000 ? `${(Math.round(x / 100) / 10).toString().replace(/\.0$/, "")}k` : `${Math.round(x)}`);
+    const mins = wa.workoutMin || (wa.exerciseMin && wa.exerciseMin >= 20 ? wa.exerciseMin : 0);
+    if (mins > 0) {
+      const t = mins >= 60 ? `${Math.floor(mins / 60)}h${mins % 60 ? ` ${mins % 60} min` : ""}` : `${mins} min`;
+      recap.push(pick([
+        `💪 You worked out for ${t} yesterday. Are your muscles burning yet? 🔥`,
+        `🏋️‍♀️ ${t} of working out! Sore today? That's the glow-up loading 😮‍💨`,
+        `💦 ${t} of sweat yesterday. Your muscles are crying, I'm clapping 👏`,
+        `🔥 You moved for ${t}. Gym girlie behaviour, honestly obsessed 💅`,
+      ], "wo"));
+    }
+    if (wa.steps !== null && wa.steps > 0) {
       const g = wa.stepGoal;
       recap.push(wa.steps >= g
-        ? pick([`👟 ${k(wa.steps)} steps! Goal smashed, those legs are SERVING 💅`, `👟 ${k(wa.steps)} steps (goal ${k(g)}). Hot girl walk: completed ✅`], "st1")
-        : wa.steps >= g * 0.6 ? pick([`👟 ${k(wa.steps)} steps, ${k(g - wa.steps)} short of ${k(g)}. So close it hurts 😩`, `👟 ${k(wa.steps)} steps. Almost! One more walk and you'd have had it 🚶‍♀️`], "st2")
-        : pick([`👟 Only ${k(wa.steps)} steps… babe, are we glued to the chair? 🪑 Walk it out today!`, `👟 ${k(wa.steps)} steps. Your watch is disappointed and honestly so am I 😤 Let's move today`], "st3"));
+        ? pick([`👟 And you walked ${k(wa.steps)} steps. Way to go, queen! 👑`, `👟 ${k(wa.steps)} steps walked. Those legs are SERVING 💅`, `👟 ${k(wa.steps)} steps! Hot girl walk: completed ✅`], "st1")
+        : wa.steps >= g * 0.6 ? pick([`👟 You walked ${k(wa.steps)} steps. Not bad! A little more today? 😉`, `👟 ${k(wa.steps)} steps. Almost at ${k(g)}, so close! 🚶‍♀️`], "st2")
+        : pick([`👟 Only ${k(wa.steps)} steps… babe, let's walk it out today 🚶‍♀️`, `👟 ${k(wa.steps)} steps. The couch had you, huh? 🛋️ Let's move today!`], "st3"));
     }
-    if (wa.workouts.length) recap.push(`🏋️‍♀️ Workout${wa.workouts.length > 1 ? "s" : ""}: ${wa.workouts.join(", ")}. Gym girlie behaviour 💪🔥`);
-    const extra: string[] = [];
-    if (wa.activeKcal !== null) extra.push(`${k(wa.activeKcal)} kcal burned`);
-    if (wa.exerciseMin !== null) extra.push(`${wa.exerciseMin} exercise min`);
-    if (wa.restingHr !== null) extra.push(`resting heart ${wa.restingHr} bpm`);
-    if (extra.length) recap.push(`⌚ ${extra.join(", ")}`);
   }
   if (r.measured) recap.push(`📏 Measurements: ${r.measured} 🔥`);
   if (r.money) {
@@ -202,7 +207,7 @@ async function aiVoice(f: MorningFacts): Promise<Voice> {
   const prompt = `You are ${f.name}'s sassy, loving best friend texting her a good-morning message on Telegram.
 Style: Gen-Z hype-girl bestie, playful, warm, a bit cheeky, lots of emojis, short punchy lines, NOT professional, NOT generic quotes. Mix it up every day (today is ${f.todayWeekday} ${f.today}).
 Use ONLY the facts below with their real numbers. Never invent achievements, numbers or events. If something wasn't logged, don't mention it (or tease her gently to log it). Celebrate wins loudly; for misses be cheeky but kind and turn it into today's mission.
-"watch" is her Apple Watch data (steps vs stepGoal, workouts, kcal, heart rate in bpm): hype good step counts and workouts by number, tease low steps cheekily.
+"watch" is her Apple Watch data. Keep it SHORT and fun, max 2 lines, no stats dump (no kcal, no heart rate, no workout list): one line about how long she worked out (workoutMin, or exerciseMin if no workout) like "you worked out 45 min, are your muscles burning? 🔥", and one about her steps like "you walked 8.4k steps, way to go!" (tease cheekily if under stepGoal).
 Each "highlights" item is a win / special thing she logged on her Wins page (steps, yoga, volunteering...): make a BIG deal of each one, by name.
 
 FACTS ABOUT YESTERDAY (${f.yesterday.weekday}):
