@@ -126,7 +126,7 @@ export async function saveOpportunity(_: Result, f: FormData): Promise<Result> {
       await insertEvent(config.google.calendarIds[0], { summary: `[Deadline] Apply: ${title}`, description: String(f.get("link") || ""), start: { date: deadline }, end: { date: addDays(deadline, 1) } });
     }
   } catch (e) { return { error: String(e) }; }
-  revalidatePath("/opportunities");
+  revalidatePath("/updates");
   return { ok: f.get("calendar") && deadline ? "Saved, and the deadline is in your calendar ✓" : "Saved ✓" };
 }
 
@@ -136,7 +136,7 @@ export async function retryDaily(f: FormData) {
   const key = String(f.get("key") || "");
   if (!RETRYABLE.includes(key)) return;
   revalidateTag(`daily-${key}`);
-  revalidatePath("/updates"); revalidatePath("/opportunities"); revalidatePath("/content");
+  revalidatePath("/updates"); revalidatePath("/content");
 }
 
 // ───── Wins ─────
