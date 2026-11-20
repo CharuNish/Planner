@@ -6,7 +6,7 @@ A private, free, daily-updated personal planner dashboard.
 
 **Stage 2:** Updates (GitHub trending, papers, Medium, YouTube), Opportunities (jobs, PhD, MSc, schools), Weight & real recipes, Habits, Mini goals.
 
-**Content tab:** posting queue from Google Drive folders, AI captions and hashtags, daily ideas, post performance and Telegram reminders (SETUP.md steps 10-12).
+**Content tab:** a pink analytics page for your 7 accounts: followers, growth and likes charts, days since your last post (with nudges), top posts and collabs, all from your sheet (SETUP.md step 10).
 
 👉 **Start with [SETUP.md](SETUP.md).** Sheet templates are in [`templates/`](templates/).
 

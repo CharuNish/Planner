@@ -12,10 +12,8 @@ export const config = {
     financeSheetId: process.env.FINANCE_SHEET_ID || "",
     studiesSheetId: process.env.STUDIES_SHEET_ID || "",
     lifeSheetId: process.env.LIFE_SHEET_ID || "",
-    // Content tabs (Posts, Followers) can live in their own sheet, or in the Life sheet if this is empty.
+    // Content tabs (Followers, Uploads, Collabs) can live in their own sheet, or in the Life sheet if this is empty.
     contentSheetId: process.env.CONTENT_SHEET_ID || process.env.LIFE_SHEET_ID || "",
-    // One Google Drive folder with a sub-folder per account, e.g. "Life with C - Instagram".
-    contentFolderId: (process.env.CONTENT_FOLDER_ID || "").replace(/^.*folders\//, "").replace(/[?#].*$/, ""),
     calendarIds: (process.env.GOOGLE_CALENDAR_IDS || "").split(",").map((s) => s.trim()).filter(Boolean),
   },
   // Either one number for every day ("4"), or 7 numbers for Mon,Tue,Wed,Thu,Fri,Sat,Sun ("2,2,3,2,2,6,6").
@@ -30,8 +28,6 @@ export const config = {
   cronSecret: process.env.CRON_SECRET || "",
   geminiKey: process.env.GEMINI_API_KEY || "",
   youtubeKey: process.env.YOUTUBE_API_KEY || "",
-  // Your YouTube channels, e.g. "Life with C=@lifewithc; Ane Manda=@anemanda" (handle or channel ID).
-  youtubeChannels: (process.env.YOUTUBE_CHANNELS || "").split(/[;\n]/).map((x) => x.split("=").map((y) => y.trim())).filter((p) => p.length === 2 && p[0] && p[1]).map(([name, id]) => ({ name, id })),
   // Used in the Weight tab hype quotes ("imagine how ___ would regret it"). Leave EX_NAME empty in Vercel to keep the default, or set "none" to turn those off.
   exName: process.env.EX_NAME === "none" ? "" : process.env.EX_NAME || "Tharush",
   weightGoalKg: Number(process.env.WEIGHT_GOAL_KG || 0),
@@ -47,4 +43,3 @@ export const studiesIsDemo = () => !hasGoogle() || !config.google.studiesSheetId
 export const calendarIsDemo = () => !hasGoogle() || config.google.calendarIds.length === 0;
 export const lifeIsDemo = () => !hasGoogle() || !config.google.lifeSheetId;
 export const contentIsDemo = () => !hasGoogle() || !config.google.contentSheetId;
-export const contentFolderIsDemo = () => !hasGoogle() || !config.google.contentFolderId;

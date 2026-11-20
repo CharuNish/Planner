@@ -110,3 +110,54 @@ select.input option { background: var(--card-solid); }
 @keyframes hype-float { 0%, 100% { translate: 0 0; } 50% { translate: 0 -4px; } }
 .hype-emoji { color: initial; -webkit-text-fill-color: initial; background: none; display: inline-block; font-size: .9em; margin-left: .1em; }
 @media (prefers-reduced-motion: reduce) { .hype { animation: none; } }
+
+/* ───── Content tab: soft pink "studio" look ───── */
+.girly {
+  --fg: #fdeaf4;
+  --muted: #cfa6c6;
+  --card: rgba(52, 20, 54, 0.58);
+  --card-solid: #241028;
+  --border: rgba(244, 114, 182, 0.2);
+  --accent: #f472b6;
+  --accent-2: #c084fc;
+  --accent-soft: rgba(244, 114, 182, 0.16);
+  --grid: rgba(244, 114, 182, 0.09);
+  position: relative;
+}
+.girly-bg {
+  position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background:
+    radial-gradient(900px 520px at 8% -8%, rgba(244, 114, 182, .32), transparent 62%),
+    radial-gradient(800px 520px at 100% 6%, rgba(192, 132, 252, .26), transparent 60%),
+    radial-gradient(700px 500px at 50% 115%, rgba(251, 207, 232, .16), transparent 60%),
+    linear-gradient(180deg, rgba(38, 12, 40, .78), rgba(24, 8, 30, .86));
+}
+.girly .card {
+  background: linear-gradient(180deg, rgba(255, 200, 230, .07), rgba(255, 255, 255, .01)), var(--card);
+  border-radius: 1.6rem;
+  box-shadow: 0 1px 0 rgba(255, 220, 240, .06) inset, 0 20px 44px -26px rgba(236, 72, 153, .45);
+}
+.girly .card:hover { border-color: rgba(244, 114, 182, .45); }
+.girly [data-tile] { background: rgba(255, 220, 240, .04); border: 1px solid rgba(244, 114, 182, .14); }
+.girly [data-tile]:hover { border-color: rgba(244, 114, 182, .35); }
+.girly .kicker { color: #f9a8d4; }
+.girly h2 { color: #ffe4f1; }
+.girly .soft { background: rgba(244, 114, 182, .16); color: #fbcfe8; border-color: rgba(244, 114, 182, .3); }
+.girly .chip.paid { background: rgba(134, 239, 172, .14); color: #bbf7d0; border-color: rgba(134, 239, 172, .3); }
+.girly .btn { background: linear-gradient(135deg, #f472b6, #e879f9 50%, #c084fc); box-shadow: 0 8px 24px -8px rgba(244, 114, 182, .7); }
+.girly .input:focus { border-color: #f472b6; box-shadow: 0 0 0 3px rgba(244, 114, 182, .22); }
+.girly .recharts-line-curve { filter: drop-shadow(0 0 4px rgba(244, 114, 182, .45)); }
+.girly-title {
+  font-size: 3.1rem; line-height: 1.05; font-weight: 700;
+  background: linear-gradient(90deg, #fbcfe8, #f472b6 45%, #d8b4fe);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  filter: drop-shadow(0 0 18px rgba(244, 114, 182, .35));
+}
+.pill-btn {
+  display: inline-flex; align-items: center; gap: .35rem; border-radius: 999px; padding: .4rem .95rem;
+  font-size: .82rem; font-weight: 600; border: 1px solid rgba(244, 114, 182, .4); color: #fbcfe8;
+  background: rgba(244, 114, 182, .08); transition: background .2s, transform .15s;
+}
+.pill-btn:hover { background: rgba(244, 114, 182, .18); transform: translateY(-1px); }
+.pill-btn.on { background: linear-gradient(135deg, #f472b6, #c084fc); color: #fff; border-color: transparent; box-shadow: 0 6px 18px -6px rgba(244, 114, 182, .7); }
+.nudge { background: linear-gradient(135deg, rgba(244, 114, 182, .2), rgba(192, 132, 252, .14)); border: 1px solid rgba(244, 114, 182, .4); }

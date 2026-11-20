@@ -131,7 +131,7 @@ export async function saveOpportunity(_: Result, f: FormData): Promise<Result> {
 }
 
 // "Try again" for a daily feed that failed (forces one fresh attempt).
-const RETRYABLE = ["github-trending", "papers", "medium", "youtube", "opportunities", "content-ideas", "content-trends", "my-youtube"];
+const RETRYABLE = ["github-trending", "papers", "medium", "youtube", "opportunities"];
 export async function retryDaily(f: FormData) {
   const key = String(f.get("key") || "");
   if (!RETRYABLE.includes(key)) return;
