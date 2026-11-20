@@ -65,7 +65,7 @@ This lets the planner read your sheets and calendar **without making them public
 
 - **Each Google Sheet:** click **Share**, paste the `client_email`, choose **Editor**, untick "Notify", **Share**.
 - **Google Calendar:** open [Google Calendar](https://calendar.google.com) → ⚙️ **Settings** → on the left click your calendar under "Settings for my calendars" → **Share with specific people → Add people** → paste the `client_email` → choose **Make changes to events** → **Send**.
-  Your calendar ID is shown lower on the same page under "Integrate calendar" (for your main calendar it's your Gmail address). Add other calendars (like a university one) the same way and list all their IDs separated by commas.
+  Your **calendar ID is simply your Gmail address** (e.g. `yourname@gmail.com`). You'll use it in step 3. Nothing else to do on this page.
 
 > 💡 **Tip:** Start event titles with a tag like `[Gym]`, `[Exam]`, `[Lecture]`, `[Bill]` or `[Meeting]` to choose their colour in the planner. Without a tag it guesses from the title.
 
@@ -85,7 +85,7 @@ This lets the planner read your sheets and calendar **without making them public
 | `GOOGLE_PRIVATE_KEY` | `private_key` from the JSON file, the **whole thing** including `-----BEGIN…` and `…END PRIVATE KEY-----\n` |
 | `FINANCE_SHEET_ID` | ID of your Finance sheet |
 | `STUDIES_SHEET_ID` | ID of your Studies sheet |
-| `GOOGLE_CALENDAR_IDS` | your calendar ID(s), comma separated |
+| `GOOGLE_CALENDAR_IDS` | your Gmail address |
 | `OWNER_NAME` | Charuka |
 | `TIMEZONE` | `Asia/Colombo` (change if you move) |
 | `CURRENCY` | `Rs` (or `LKR`, `$`, …) |
