@@ -11,8 +11,6 @@ import { CountUp, Ring } from "@/components/fx";
 import { analyseHabits, analyseWeight, getCountdown, loadHabits, loadWeight } from "@/lib/life";
 import { Countdown } from "@/components/countdown";
 import { SendMorningButton } from "@/components/wins";
-import { BotTimes } from "@/components/bot-times";
-import { loadBotLog, loadBotTimes } from "@/lib/bot";
 
 export const dynamic = "force-dynamic";
 
@@ -23,15 +21,13 @@ function greeting() {
 
 export default async function Home() {
   const today = todayISO();
-  const [fin, stu, cal, hab, wt, cd, botTimes, botLog] = await Promise.all([
+  const [fin, stu, cal, hab, wt, cd] = await Promise.all([
     loadFinance().catch((e) => ({ error: String(e) })),
     loadStudies().catch((e) => ({ error: String(e) })),
     loadEvents(14).catch((e) => ({ demo: false, events: [], error: String(e) })),
     loadHabits().catch(() => null),
     loadWeight().catch(() => null),
     getCountdown(),
-    loadBotTimes().catch(() => []),
-    loadBotLog().catch(() => []),
   ]);
   const h = hab ? analyseHabits(hab.days) : null;
   const w = wt ? analyseWeight(wt.entries) : null;
@@ -150,7 +146,6 @@ export default async function Home() {
           ) : <Empty>No exams or submissions coming up.</Empty>}
         </Section>
       </div>
-      {botTimes.length > 0 && <BotTimes times={botTimes} log={botLog} />}
       <div className="flex justify-center pt-2"><SendMorningButton /></div>
     </div>
   );

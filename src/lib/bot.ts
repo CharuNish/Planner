@@ -1,6 +1,6 @@
 // The Telegram "bestie bot" schedule: morning recap, midday deadline check, evening check-in and night recap.
-// You choose the times on the Home page (saved in the Life sheet's "Settings" tab).
-// A free "alarm clock" (cron-job.org) calls /api/cron/tick every 5 minutes; each call sends whatever is due.
+// The times are fixed here in SLOTS (Sri Lanka time). Vercel calls /api/cron/tick once around each time
+// (see vercel.json, free plan = "sometime within that hour"); each call sends whatever is due.
 // Every message (or skip) is written to a "BotLog" tab so nothing is sent twice.
 // Evening and night messages use NO Gemini (the free quota is kept for the morning message).
 import { loadEvents, type CalEvent } from "./calendar";
@@ -25,19 +25,12 @@ export type SlotKey = (typeof SLOTS)[number]["key"];
 export type BotTime = { key: SlotKey; label: string; hint: string; time: string; on: boolean };
 export const BOTLOG_HEADERS = ["Date", "Slot", "Time", "Status"];
 
-/** A slot counts as "due" from its time until this many minutes later (covers a late alarm clock). */
+/** A slot counts as "due" from EARLY_MIN before its time until WINDOW_MIN after it
+ *  (Vercel's free timers fire "sometime within the hour", so this keeps every message within ~30 min of its time). */
+const EARLY_MIN = 30;
 const WINDOW_MIN = 180;
 
 const toMin = (hm: string) => { const [h, m] = hm.split(":").map(Number); return h * 60 + m; };
-export const validTime = (s: string) => /^([01]\d|2[0-3]):[0-5]\d$/.test(s);
-/** Accepts "7:00", "07:00", "7.30", or a Google Sheets time number (0.29 = 7:00). */
-function normTime(v: unknown): string | null {
-  if (typeof v === "number" && v >= 0 && v < 1) { const m = Math.round(v * 1440); return `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`; }
-  const m = str(v).match(/^(\d{1,2})[:.](\d{2})/);
-  if (!m) return null;
-  const t = `${m[1].padStart(2, "0")}:${m[2]}`;
-  return validTime(t) ? t : null;
-}
 /** The current time in your time zone as "HH:MM". */
 export function nowHM() {
   const p = new Intl.DateTimeFormat("en-GB", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: config.timezone }).formatToParts(new Date());
@@ -51,18 +44,9 @@ const lifeTab = (name: string) => readSheet(config.google.lifeSheetId, name).cat
   throw e;
 });
 
-/** Your chosen bot times. Settings rows look like: bot-evening | 18:00 | on. Last row wins. */
+/** The bot times (fixed in SLOTS above). To change one, edit SLOTS and the matching line in vercel.json. */
 export async function loadBotTimes(): Promise<BotTime[]> {
-  const rows = lifeIsDemo() ? [] : await lifeTab("Settings").catch(() => []);
-  return SLOTS.map((s) => {
-    let time: string = s.def, on = true;
-    for (const r of rows) {
-      if (str(r["setting"]).toLowerCase() !== `bot-${s.key}`) continue;
-      time = normTime(r["value"]) || time;
-      on = !/^(off|no|false|0)$/i.test(str(r["label"]));
-    }
-    return { key: s.key, label: s.label, hint: s.hint, time, on };
-  });
+  return SLOTS.map((s) => ({ key: s.key, label: s.label, hint: s.hint, time: s.def, on: true }));
 }
 
 export type LogRow = { date: string; slot: string; time: string; status: string };
@@ -79,7 +63,7 @@ async function logSlot(slot: string, status: string) {
 /** Which slots should go out right now (time has passed, still inside the window, not done today). */
 export function dueSlots(times: BotTime[], doneToday: Set<string>, now = nowHM()): BotTime[] {
   const n = toMin(now);
-  return times.filter((t) => t.on && !doneToday.has(t.key) && n >= toMin(t.time) && n - toMin(t.time) < WINDOW_MIN);
+  return times.filter((t) => t.on && !doneToday.has(t.key) && n >= toMin(t.time) - EARLY_MIN && n - toMin(t.time) < WINDOW_MIN);
 }
 
 // ───────── What happened today (shared by evening + night) ─────────

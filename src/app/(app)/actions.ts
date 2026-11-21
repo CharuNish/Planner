@@ -225,32 +225,3 @@ export async function logWorkout(_: Result, f: FormData): Promise<Result> {
   } catch (e) { return { error: String(e) }; }
 }
 
-/** Saves the Telegram bot times (Home page → Bestie bot schedule). One Settings row per message: bot-evening | 18:00 | on */
-export async function saveBotTimes(_: Result, f: FormData): Promise<Result> {
-  const n = needLife(); if (n) return n;
-  const { SLOTS, validTime } = await import("@/lib/bot");
-  const rows: string[][] = [];
-  for (const s of SLOTS) {
-    const time = String(f.get(`${s.key}-time`) || "");
-    if (!validTime(time)) return { error: `Pick a time for ${s.label}.` };
-    rows.push([`bot-${s.key}`, `'${time}`, f.get(`${s.key}-on`) ? "on" : "off"]);
-  }
-  try { for (const r of rows) await appendRowCreatingTab(config.google.lifeSheetId, "Settings", ["Setting", "Value", "Label"], r); }
-  catch (e) { return { error: String(e) }; }
-  revalidatePath("/");
-  return { ok: "Saved ✓ The bot will text you at those times 💌" };
-}
-
-/** Sends one bot message right now, to test it. Doesn't count as today's scheduled one. */
-export async function sendBotNow(slot: string): Promise<Result> {
-  try {
-    const { SLOTS, buildSlot } = await import("@/lib/bot");
-    const s = SLOTS.find((x) => x.key === slot);
-    if (!s) return { error: "Unknown message." };
-    const { sendTelegram } = await import("@/lib/morning");
-    const text = await buildSlot(s.key);
-    if (!text) return { ok: "Nothing urgent right now, so the midday check would stay quiet 😌" };
-    await sendTelegram(text);
-    return { ok: "Sent! Check Telegram 💌" };
-  } catch (e) { return { error: String(e).slice(0, 200) }; }
-}

@@ -5,9 +5,9 @@ import { config } from "@/lib/config";
 export const maxDuration = 60;
 export const dynamic = "force-dynamic";
 
-// The bot's alarm clock. A free pinger (cron-job.org) calls this every 5 minutes, and Vercel calls it
-// a few times a day as a backup (see vercel.json). Each call sends the Telegram message that's due
-// right now (morning / midday / evening / night, at the times you picked on the Home page), once.
+// The bot's alarm clock. Vercel calls this once around each message time (see vercel.json).
+// Each call sends the Telegram message that's due right now (morning / midday / evening / night,
+// times fixed in src/lib/bot.ts), once a day each. ?slot= in vercel.json is just a label.
 // Protected by CRON_SECRET: send "Authorization: Bearer <secret>" or add ?key=<secret> to the link.
 export async function GET(req: Request) {
   const key = new URL(req.url).searchParams.get("key");

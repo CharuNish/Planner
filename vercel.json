@@ -1,9 +1,9 @@
 {
   "crons": [
     { "path": "/api/cron/refresh", "schedule": "30 0 * * *" },
-    { "path": "/api/cron/tick?backup=morning", "schedule": "0 2 * * *" },
-    { "path": "/api/cron/tick?backup=midday", "schedule": "0 8 * * *" },
-    { "path": "/api/cron/tick?backup=evening", "schedule": "0 13 * * *" },
-    { "path": "/api/cron/tick?backup=night", "schedule": "0 16 * * *" }
+    { "path": "/api/cron/tick?slot=morning", "schedule": "30 1 * * *" },
+    { "path": "/api/cron/tick?slot=midday", "schedule": "30 7 * * *" },
+    { "path": "/api/cron/tick?slot=evening", "schedule": "30 12 * * *" },
+    { "path": "/api/cron/tick?slot=night", "schedule": "0 16 * * *" }
   ]
 }
