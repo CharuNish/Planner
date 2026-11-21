@@ -6,6 +6,8 @@ import { daysBetween, prettyDate, relativeDays, todayISO } from "@/lib/dates";
 import { analyseFinance, fmt, loadFinance, upcomingBills } from "@/lib/finance";
 import { InvestmentsSection } from "@/components/investments";
 import { loadInvestments } from "@/lib/investments";
+import { Celebration } from "@/components/celebrate";
+import { savingsWin } from "@/lib/celebrations";
 
 export const dynamic = "force-dynamic";
 
@@ -29,6 +31,7 @@ export default async function FinancePage() {
         <AddTransactionForm categories={cats} />
       </PageHeader>
       {data.demo && <DemoBanner what="finance sheet" />}
+      <Celebration kind="coins" title="You saved more than last month! 💸" items={savingsWin(a.trend, a.month, fmt)} />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <Stat label="Income" value={fmt(a.income)} />

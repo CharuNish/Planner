@@ -6,6 +6,8 @@ import { analyseStudies, loadStudies } from "@/lib/studies";
 import { loadEvents } from "@/lib/calendar";
 import { hoursLeftToday, studyNudges, type Nudge } from "@/lib/nudges";
 import { Ring } from "@/components/fx";
+import { Celebration } from "@/components/celebrate";
+import { deadlineWins } from "@/lib/celebrations";
 
 const BUBBLE: Record<Nudge["level"], string> = { fire: "#fb7185", warn: "#fbbf24", info: "#22d3ee", good: "#34d399" };
 type Mission = { hoursToday: number; target: number; next?: { title: string; daysLeft: number }; step?: string };
@@ -70,6 +72,7 @@ export default async function StudiesPage() {
         <LogStudyForm subjects={subjects} />
       </PageHeader>
       {data.demo && <DemoBanner what="studies sheet" />}
+      <Celebration kind="fireworks" title="Deadline DONE, hurray! 🎆" items={deadlineWins(data.deadlines, data.tasks)} />
 
       <div className="card p-5 flex items-start gap-3">
         <StatusChip status={a.overall} />

@@ -4,6 +4,8 @@ import { FollowersForm } from "@/components/content-forms";
 import { CountUp } from "@/components/fx";
 import { config } from "@/lib/config";
 import { prettyDate, daysBetween, todayISO } from "@/lib/dates";
+import { Celebration } from "@/components/celebrate";
+import { followerGoalWins } from "@/lib/celebrations";
 import { ACCOUNTS, analyseContent, CHANNELS, loadContent, NUDGE_DAYS, PLATFORM_COLOR, PLATFORM_ICON, PLATFORMS } from "@/lib/content";
 
 export const dynamic = "force-dynamic";
@@ -65,6 +67,7 @@ export default async function ContentPage() {
   return (
     <div className="girly space-y-5">
       <div className="girly-bg" aria-hidden />
+      <Celebration kind="hearts" title="Content goal smashed! 💖" items={followerGoalWins(a.accounts)} />
 
       <header className="flex flex-wrap items-end justify-between gap-3 mb-2">
         <div>

@@ -6,6 +6,8 @@ import { config } from "@/lib/config";
 import { daysBetween, prettyDate, todayISO } from "@/lib/dates";
 import { imageFor } from "@/lib/images";
 import { loadGoals } from "@/lib/life";
+import { Celebration } from "@/components/celebrate";
+import { goalWins } from "@/lib/celebrations";
 
 export const dynamic = "force-dynamic";
 
@@ -27,6 +29,7 @@ export default async function GoalsPage() {
     <div className="space-y-6 rise">
       <PageHeader title="🎯 Mini goals" subtitle={`${goals.length} goals · ${done} achieved 🏆`} />
       {demo && <DemoBanner what="Life sheet" />}
+      <Celebration kind="balloons" title="Mini goal achieved! 🎈" items={goalWins(goals)} />
       {!goals.length && <Empty>Add goals to the Goals tab of your Life sheet.</Empty>}
       {travel.length > 0 && (
         <section className="card p-5 md:p-6 grid md:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] gap-6 items-center overflow-hidden">
