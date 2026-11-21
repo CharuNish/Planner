@@ -19,6 +19,12 @@ export async function POST(req: Request) {
 
   try {
     const day = inputFromBody(body);
+    const nums = [day.steps, day.distanceKm, day.activeKcal, day.exerciseMin, day.restingHr, day.avgHr, day.minHr, day.maxHr];
+    if (nums.every((n) => n === null) && !day.workouts.length) {
+      // Nothing usable arrived: tell the phone exactly what it sent, so the Shortcut can be fixed.
+      const sent = Object.entries(body).filter(([k]) => k !== "key").map(([k, v]) => `${k}=${JSON.stringify(v ?? "").slice(0, 20) || "(empty)"}`).join(", ");
+      return NextResponse.json({ ok: false, message: `⚠️ Connected, but no numbers came through. Phone sent: ${sent || "nothing except the key"}. If they're all empty, unlock your phone and run it again, or check each field has its blue variable.` }, { status: 200 });
+    }
     const saved = await saveHealthDay(day);
     const gym = await tickGymFromWatch(day).catch(() => false);
     const steps = day.steps !== null ? `${day.steps.toLocaleString("en-US")} steps` : "no steps";

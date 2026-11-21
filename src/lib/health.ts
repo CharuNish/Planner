@@ -119,8 +119,19 @@ export async function loadHealth(): Promise<{ demo: boolean; days: HealthDay[] }
 // ───── Saving (called by /api/apple-health) ─────
 export type HealthInput = Omit<HealthDay, "syncedAt">;
 
-export function inputFromBody(b: Record<string, unknown>): HealthInput {
-  const pick = (...keys: string[]) => { for (const k of keys) if (b[k] !== undefined && str(b[k]) !== "") return b[k]; return undefined; };
+/** Keys as the Shortcut sent them, made forgiving: "Steps ", "HR_Avg", "hr avg" all work. */
+export function normaliseBody(raw: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(raw)) {
+    const key = k.trim().toLowerCase().replace(/[\s-]+/g, "_");
+    out[key] = Array.isArray(v) ? (v.length === 1 ? v[0] : v) : v;
+  }
+  return out;
+}
+
+export function inputFromBody(raw: Record<string, unknown>): HealthInput {
+  const b = normaliseBody(raw);
+  const pick = (...keys: string[]) => { for (const k of keys.map((x) => x.toLowerCase())) if (b[k] !== undefined && str(b[k]) !== "") return b[k]; return undefined; };
   let distance = looseNum(pick("distance", "distance_km", "distanceKm"));
   if (distance !== null && /\bmi\b|mile/i.test(String(pick("distance", "distance_km") ?? ""))) distance = distance * 1.609;
   if (distance !== null && distance > 200) distance = distance / 1000; // sent in metres
