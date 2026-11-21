@@ -108,7 +108,7 @@ Every morning at **7:00 AM (Sri Lanka time)** the planner can message you: today
 3. In a browser open `https://api.telegram.org/bot<YOUR-TOKEN>/getUpdates` and find `"chat":{"id": 123456789`. That number is your **chat ID**.
 4. In Vercel → your project → **Settings → Environment Variables**, add `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` and `CRON_SECRET` (any random text). Then **Deployments → ⋯ → Redeploy**.
 
-To change the time, edit `vercel.json` (the time is in UTC: `30 1 * * *` = 01:30 UTC = 07:00 Sri Lanka).
+For the bot's message times (morning, midday, evening, night), see **step 14**.
 
 ---
 
@@ -256,6 +256,22 @@ Follow **[APPLE-WATCH.md](APPLE-WATCH.md)** (about 20 minutes, once). New Vercel
 **Morning message:** the 7 AM Telegram to-do list now also says when an FD matures within 7 days, when a planned FD is due to start within 3 days, and when one has matured and is waiting for you.
 
 Interest is worked out simply (amount × rate × days ÷ 365), before tax, so it can be a few rupees off your bank's figure. Your bank's slip is always the final word.
+
+## 14. When the Telegram bot texts you
+
+**No setup needed.** The bot texts you up to 4 times a day (Sri Lanka time):
+
+| Message | Time | What it says |
+|---|---|---|
+| ☀️ Morning recap | 7:00 AM | Yesterday's recap + today's to-do list (the one from step 11) |
+| 🚨 Midday deadline check | 1:00 PM | **Only** sends if a deadline or today's study goal is urgent |
+| 🌆 Evening check-in | 6:00 PM | How today is going (study hours, steps, water, spends, wins) + one mission for tonight |
+| 🌙 Night recap | 9:30 PM | Today's scoreboard, tomorrow's calendar, deadlines and bills, and what to log before bed |
+
+- Vercel's free timers run "sometime within the hour", so each message arrives within about half an hour of its time.
+- Evening and night messages don't use Gemini, so your free Gemini quota is still only used once a day (morning).
+- Nothing is sent twice: every message is listed in a **BotLog** tab in your Life sheet (created by itself the first time).
+- Want different times? Just ask Claude. (They live in `src/lib/bot.ts` and `vercel.json`.)
 
 ## Running it on your laptop (optional, for tinkering)
 
