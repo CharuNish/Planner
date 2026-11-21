@@ -5,8 +5,8 @@ import { buildMorningMessage, sendTelegram } from "@/lib/morning";
 
 export const maxDuration = 60;
 
-// Runs every morning at 7 AM Sri Lanka time (see vercel.json) and sends your bestie-style
-// Telegram message: yesterday's recap + today's to-do list (built in src/lib/morning.ts).
+// Sends the bestie-style morning message right now: yesterday's recap + today's to-do list
+// (built in src/lib/morning.ts). The daily schedule lives in /api/cron/tick (times set on the Home page).
 // Add ?dry=1 to see the message without sending it (needs the CRON_SECRET header like the cron).
 export async function GET(req: Request) {
   if (config.cronSecret && req.headers.get("authorization") !== `Bearer ${config.cronSecret}`) {

@@ -108,7 +108,7 @@ Every morning at **7:00 AM (Sri Lanka time)** the planner can message you: today
 3. In a browser open `https://api.telegram.org/bot<YOUR-TOKEN>/getUpdates` and find `"chat":{"id": 123456789`. That number is your **chat ID**.
 4. In Vercel → your project → **Settings → Environment Variables**, add `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` and `CRON_SECRET` (any random text). Then **Deployments → ⋯ → Redeploy**.
 
-To change the time, edit `vercel.json` (the time is in UTC: `30 1 * * *` = 01:30 UTC = 07:00 Sri Lanka).
+To choose when the bot texts you (morning, midday, evening, night), see **step 14**.
 
 ---
 
@@ -256,6 +256,38 @@ Follow **[APPLE-WATCH.md](APPLE-WATCH.md)** (about 20 minutes, once). New Vercel
 **Morning message:** the 7 AM Telegram to-do list now also says when an FD matures within 7 days, when a planned FD is due to start within 3 days, and when one has matured and is waiting for you.
 
 Interest is worked out simply (amount × rate × days ÷ 365), before tax, so it can be a few rupees off your bank's figure. Your bank's slip is always the final word.
+
+## 14. Choose when the Telegram bot texts you
+
+The bot can text you up to 4 times a day. Each one is optional:
+
+| Message | Default time | What it says |
+|---|---|---|
+| ☀️ Morning recap | 7:00 AM | Yesterday's recap + today's to-do list (the one from step 11) |
+| 🚨 Midday deadline check | 1:00 PM | **Only** sends if a deadline or today's study goal is urgent |
+| 🌆 Evening check-in | 6:00 PM | How today is going (study hours, steps, water, spends, wins) + one mission for tonight |
+| 🌙 Night recap | 9:30 PM | Today's scoreboard, tomorrow's calendar, deadlines and bills, and what to log before bed |
+
+Evening and night messages don't use Gemini, so your free Gemini quota is still only used once a day (morning).
+
+**Change the times:** Home page → scroll down to **🤖 Bestie bot schedule** → change the times, untick any you don't want → **Save times**. Each row has a **send test** link to see that message right now. The row also shows "✓ sent today 6:02 PM" once it went out. (Your times are saved in the **Settings** tab of your Life sheet, and every message the bot sends is listed in a new **BotLog** tab.)
+
+**One-time setup for exact times (free, about 5 minutes).** Vercel's free plan can only run its own timers once a day at fixed hours, so it can't follow the times you pick. A free website called cron-job.org acts as the bot's alarm clock: it knocks on your planner every 5 minutes, and the planner sends whatever message is due.
+
+1. Find your `CRON_SECRET`: vercel.com → your **planner** project → **Settings → Environment Variables** → click the 👁 eye next to `CRON_SECRET` and copy it. (If there's none, click **Add New**, name it `CRON_SECRET`, value: any random word like `pinkbanana42`, Save, then **Deployments → ⋯ → Redeploy**.)
+2. Go to **cron-job.org** → **Sign up** (free, just email) → confirm your email → log in.
+3. Click **Create cronjob** (top right of the Dashboard).
+4. **Title:** `Planner bot`. **URL:** `https://planner-sable-five.vercel.app/api/cron/tick?key=YOUR-CRON-SECRET` (replace the last part with what you copied in step 1).
+5. **Execution schedule:** choose **Every 5 minutes**.
+6. Click **Create** (or **Save**) at the bottom. Done!
+7. Check it works: open the job, click **Test run** (or wait 5 minutes and look at **History**). You should see status **200 OK** and a reply like `{"now":"18:05","skipped":"nothing due"}`. If it says `unauthorised`, the secret in the link doesn't match `CRON_SECRET`.
+
+**Without cron-job.org** the bot still works, but only near the default times, and messages can be up to an hour late (Vercel's free timers run once a day "sometime within the hour").
+
+**Good to know**
+- If a message is late (for example the alarm clock was down), it still goes out up to 3 hours after your chosen time. After that it's skipped for the day so you don't get a 7 AM message at lunch.
+- Nothing is ever sent twice: once a message is in the BotLog tab for today, it's done.
+- **send test** doesn't count, so the real one still arrives on time.
 
 ## Running it on your laptop (optional, for tinkering)
 

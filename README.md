@@ -21,5 +21,6 @@ A private, free, daily-updated personal planner dashboard.
 | `src/app/(app)/` | The pages: Home, Finance, Calendar, Studies |
 | `src/lib/` | Reading Google data and the analysis (budget, anomalies, on-track checks, priorities) |
 | `src/components/` | Charts, forms and shared UI |
-| `src/app/api/cron/reminders` | The daily Telegram message |
+| `src/app/api/cron/tick` | Telegram bot schedule (morning / midday / evening / night, times set on Home) |
+| `src/app/api/cron/reminders` | Send the morning message now (manual test, `?dry=1` to preview) |
 | `templates/` | Google Sheet templates to copy |
