@@ -1,4 +1,4 @@
-import { HabitForm } from "@/components/forms2";
+import { HabitLogger } from "@/components/forms2";
 import { DemoBanner, PageHeader, Section, Stat } from "@/components/ui";
 import { config } from "@/lib/config";
 import { prettyDate } from "@/lib/dates";
@@ -30,8 +30,8 @@ export default async function HabitsPage() {
       <PageHeader title="✅ Habits" subtitle={`Sleep ${s}h+, water ${w}+ glasses, and the gym`} />
       {demo && <DemoBanner what="Life sheet" />}
 
-      <Section title={a.today ? "Today's check-in (update)" : "Today's check-in"}>
-        <HabitForm sleepTarget={s} waterTarget={w} />
+      <Section title="Log a habit">
+        <HabitLogger sleepTarget={s} waterTarget={w} days={Object.fromEntries(days.slice(-60).map((d) => [d.date, { sleep: d.sleep, water: d.water, gym: d.gym, notes: d.notes }]))} />
       </Section>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">

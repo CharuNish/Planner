@@ -1,8 +1,8 @@
 "use server";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { calendarIsDemo, config, financeIsDemo, lifeIsDemo, studiesIsDemo } from "@/lib/config";
-import { addDays, todayISO } from "@/lib/dates";
-import { appendRow, appendRowCreatingTab, insertEvent } from "@/lib/google";
+import { addDays, parseDate, todayISO } from "@/lib/dates";
+import { appendRow, appendRowCreatingTab, insertEvent, num, readSheetRows, str, updateRow } from "@/lib/google";
 
 type Result = { ok?: string; error?: string } | null;
 
@@ -107,14 +107,52 @@ export async function markRecipeMade(_: Result, f: FormData): Promise<Result> {
   return { ok: "Added to your cooking log 🍳" };
 }
 
-export async function habitCheckIn(_: Result, f: FormData): Promise<Result> {
+/** Logs ONE habit (sleep, water, gym or a note) into that day's row of the Habits tab.
+ *  If the day already has a row, only that habit's cell is changed, so the other habits stay as they were. */
+export async function logHabit(_: Result, f: FormData): Promise<Result> {
   const n = needLife(); if (n) return n;
-  const sleep = String(f.get("sleep") || ""), water = String(f.get("water") || "");
-  const gym = f.get("gym") ? "Yes" : "No";
-  try { await appendRow(config.google.lifeSheetId, "Habits", [String(f.get("date") || todayISO()), sleep, water, gym, String(f.get("notes") || "")]); }
-  catch (e) { return { error: String(e) }; }
+  const habit = String(f.get("habit") || "");
+  const date = String(f.get("date") || todayISO());
+  const sheet = config.google.lifeSheetId;
+  let rows: Awaited<ReturnType<typeof readSheetRows>> = [];
+  try { rows = await readSheetRows(sheet, "Habits"); } catch (e) { return { error: String(e) }; }
+  const dayRows = rows.filter((r) => parseDate(r["date"]) === date);
+  const existing = dayRows[dayRows.length - 1];
+  const head = (want: string, alt: string) => (existing && alt in existing && !(want in existing) ? alt : want);
+  const cols = { sleep: head("sleep (h)", "sleep"), water: head("water (glasses)", "water"), gym: "gym", notes: "notes" };
+
+  let key: string, value: string | number, ok: string;
+  if (habit === "sleep") {
+    const h = Number(f.get("value"));
+    if (!(h > 0 && h <= 24)) return { error: "Enter hours slept (e.g. 7.5)." };
+    key = cols.sleep; value = h; ok = `😴 ${h} h of sleep saved`;
+  } else if (habit === "water") {
+    // "add" = tap +1 glass; otherwise set the day's total
+    let current = 0;
+    for (const r of dayRows) { const v = str(r[cols.water]); if (v) current = num(v); }
+    const add = Number(f.get("add") || 0);
+    const total = add ? current + add : Number(f.get("value"));
+    if (!(total >= 0) || (!add && !str(f.get("value")))) return { error: "Enter how many glasses." };
+    key = cols.water; value = total; ok = `💧 ${total} glass${total === 1 ? "" : "es"} today`;
+  } else if (habit === "gym") {
+    const went = f.get("value") === "Yes";
+    key = cols.gym; value = went ? "Yes" : "No"; ok = went ? "🏋️ Gym day logged, look at you!" : "🛋️ Rest day logged";
+  } else if (habit === "notes") {
+    const note = String(f.get("value") || "").trim();
+    if (!note) return { error: "Write a note first." };
+    key = cols.notes; value = note; ok = "📝 Note saved";
+  } else return { error: "Unknown habit." };
+
+  try {
+    if (existing) await updateRow(sheet, "Habits", Number(existing.__row), { [key]: value });
+    else {
+      const row: (string | number)[] = [date, "", "", "", ""];
+      row[{ [cols.sleep]: 1, [cols.water]: 2, gym: 3, notes: 4 }[key] ?? 4] = value;
+      await appendRow(sheet, "Habits", row);
+    }
+  } catch (e) { return { error: String(e) }; }
   revalidatePath("/", "layout");
-  return { ok: "Checked in ✓" };
+  return { ok };
 }
 
 export async function saveOpportunity(_: Result, f: FormData): Promise<Result> {
