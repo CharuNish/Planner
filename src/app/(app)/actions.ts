@@ -2,7 +2,7 @@
 import { revalidatePath, revalidateTag } from "next/cache";
 import { calendarIsDemo, config, financeIsDemo, lifeIsDemo, studiesIsDemo } from "@/lib/config";
 import { addDays, parseDate, todayISO } from "@/lib/dates";
-import { appendRow, appendRowCreatingTab, insertEvent, num, readSheetRows, str, updateRow } from "@/lib/google";
+import { appendRow, appendRowCreatingTab, ensureTab, insertEvent, num, readSheetRows, str, updateRow } from "@/lib/google";
 
 type Result = { ok?: string; error?: string } | null;
 
@@ -223,4 +223,39 @@ export async function logWorkout(_: Result, f: FormData): Promise<Result> {
     revalidatePath("/", "layout");
     return { ok: `${type} ${minutes} min saved${gym ? ", gym ticked 🏋️‍♀️" : ""}. Look at you go!` };
   } catch (e) { return { error: String(e) }; }
+}
+
+// ───── Home to-dos (Life sheet "Todos" tab: Added | Task | Priority | Done | Done On) ─────
+const TODO_TAB = "Todos";
+const TODO_HEAD = ["Added", "Task", "Priority", "Done", "Done On"];
+
+export async function addTodo(_: Result, f: FormData): Promise<Result> {
+  const n = needLife(); if (n) return n;
+  const task = String(f.get("task") || "").trim().slice(0, 200);
+  if (!task) return { error: "Write what you need to do first 📝" };
+  const p = String(f.get("priority") || "Medium");
+  const priority = ["High", "Medium", "Low"].includes(p) ? p : "Medium";
+  const sheet = config.google.lifeSheetId;
+  try {
+    // First time only: creates the tab with bold headers and dropdowns for Priority and Done.
+    await ensureTab(sheet, TODO_TAB, TODO_HEAD, { Priority: ["High", "Medium", "Low"], Done: ["Yes", "No"] });
+    await appendRow(sheet, TODO_TAB, [todayISO(), task, priority, "No", ""]);
+  } catch (e) { return { error: String(e) }; }
+  revalidatePath("/");
+  return { ok: priority === "High" ? "Added to the top 🔥" : "Added ✓" };
+}
+
+/** Ticks a to-do off: Done = Yes and today's date in Done On. It then disappears from Home (the row stays in the sheet). */
+export async function completeTodo(row: number, task: string): Promise<{ ok?: string; error?: string }> {
+  const n = needLife(); if (n) return n;
+  const sheet = config.google.lifeSheetId;
+  try {
+    // Make sure the row still holds this to-do (in case rows were moved in the sheet since the page loaded).
+    const rows = await readSheetRows(sheet, TODO_TAB);
+    const match = rows.find((r) => Number(r.__row) === row && str(r["task"]) === task) || rows.find((r) => str(r["task"]) === task && !/^(y|yes|true|1|✓|✔|done|x)$/i.test(str(r["done"])));
+    if (!match) return { error: "Couldn't find that to-do in your sheet. Refresh the page and try again." };
+    await updateRow(sheet, TODO_TAB, Number(match.__row), { done: "Yes", "done on": todayISO() });
+  } catch (e) { return { error: String(e) }; }
+  revalidatePath("/");
+  return { ok: "Done ✓" };
 }

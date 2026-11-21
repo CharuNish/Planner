@@ -8,7 +8,8 @@ import { analyseFinance, fmt, loadFinance, upcomingBills } from "@/lib/finance";
 import { quoteOfTheDay } from "@/lib/quotes";
 import { analyseStudies, loadStudies } from "@/lib/studies";
 import { CountUp, Ring } from "@/components/fx";
-import { analyseHabits, analyseWeight, getCountdown, loadHabits, loadWeight } from "@/lib/life";
+import { analyseHabits, analyseWeight, getCountdown, loadHabits, loadTodos, loadWeight } from "@/lib/life";
+import { TodoList } from "@/components/todos";
 import { Countdown } from "@/components/countdown";
 import { SendMorningButton } from "@/components/wins";
 
@@ -21,13 +22,14 @@ function greeting() {
 
 export default async function Home() {
   const today = todayISO();
-  const [fin, stu, cal, hab, wt, cd] = await Promise.all([
+  const [fin, stu, cal, hab, wt, cd, todos] = await Promise.all([
     loadFinance().catch((e) => ({ error: String(e) })),
     loadStudies().catch((e) => ({ error: String(e) })),
     loadEvents(14).catch((e) => ({ demo: false, events: [], error: String(e) })),
     loadHabits().catch(() => null),
     loadWeight().catch(() => null),
     getCountdown(),
+    loadTodos().catch(() => ({ demo: false, items: [] })),
   ]);
   const h = hab ? analyseHabits(hab.days) : null;
   const w = wt ? analyseWeight(wt.entries) : null;
@@ -77,6 +79,10 @@ export default async function Home() {
           hint={nextDeadline ? nextDeadline.title : "nothing coming up"} tone={nextDeadline && nextDeadline.daysLeft <= 3 ? "warn" : undefined} />
         <Stat label="Studied today" value={s ? <CountUp value={s.hoursToday} decimals={1} suffix=" h" /> : "—"} hint={s ? `goal today ${s.target} h · streak ${s.streak} day${s.streak === 1 ? "" : "s"}` : ""} />
       </div>
+
+      <Section title="✅ To-dos" action={<span className="text-xs muted">anything that isn&apos;t studies</span>}>
+        <TodoList items={todos.items} demo={todos.demo} />
+      </Section>
 
       <div className="grid lg:grid-cols-3 gap-5">
         <Section title="📅 Today" action={<Link href="/calendar" className="text-xs text-accent">Calendar →</Link>} className="lg:col-span-2">

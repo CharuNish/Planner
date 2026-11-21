@@ -1,7 +1,7 @@
 // Weight, habits, mini goals, cooking log and saved opportunities all live in one "Life" Google Sheet.
 import { config, lifeIsDemo } from "./config";
 import { addDays, daysBetween, parseDate, todayISO } from "./dates";
-import { num, readSheet, str } from "./google";
+import { num, readSheet, readSheetRows, str } from "./google";
 
 export type WeightEntry = { date: string; kg: number; notes: string };
 export type HabitDay = { date: string; sleep: number | null; water: number | null; gym: boolean | null; notes: string };
@@ -244,4 +244,33 @@ export function analyseWins(items: Win[], today = todayISO()) {
   const inLast = (n: number) => items.filter((w) => daysBetween(w.date, today) < n && w.date <= today).length;
   const byCat = WIN_CATEGORIES.map((c) => ({ ...c, n: items.filter((w) => (w.category || "Other").toLowerCase() === c.key.toLowerCase()).length })).filter((c) => c.n);
   return { total: items.length, week: inLast(7), month: inLast(30), streak, today: items.filter((w) => w.date === today).length, byCat, photos: items.filter((w) => w.photo).length };
+}
+
+// ───── To-dos (non-study things: edit the vlog, buy a gift…) ─────
+// "Todos" tab in the Life sheet: Added | Task | Priority | Done | Done On. The Home page adds rows (and creates the tab the first time).
+// Ticking a to-do writes "Yes" in Done, so it disappears from Home but stays in the sheet as a record.
+export type Todo = { task: string; priority: "High" | "Medium" | "Low"; added: string; row: number };
+export const TODO_HEADERS = ["Added", "Task", "Priority", "Done", "Done On"];
+export const TODO_PRIORITIES = ["High", "Medium", "Low"] as const;
+const PRIO_RANK: Record<string, number> = { High: 0, Medium: 1, Low: 2 };
+export const toPriority = (v: unknown): Todo["priority"] => {
+  const s = str(v).toLowerCase();
+  return s.startsWith("h") ? "High" : s.startsWith("l") ? "Low" : "Medium";
+};
+/** High first, then Medium, then Low. Inside the same priority, the oldest one comes first. */
+export const sortTodos = (items: Todo[]) => [...items].sort((a, b) => PRIO_RANK[a.priority] - PRIO_RANK[b.priority] || a.added.localeCompare(b.added) || a.row - b.row);
+
+export async function loadTodos(): Promise<{ demo: boolean; items: Todo[] }> {
+  if (lifeIsDemo()) {
+    const t = todayISO();
+    const d: [number, string, Todo["priority"]][] = [[-3, "Buy a birthday gift for Amma", "Medium"], [-2, "Reply to the brand email", "Low"], [0, "Edit the new vlog 🎬", "High"]];
+    return { demo: true, items: sortTodos(d.map(([o, task, priority], i) => ({ task, priority, added: addDays(t, o), row: i + 2 }))) };
+  }
+  // readSheetRows keeps each row's real sheet row number, so ticking updates the right row even with blank rows in between.
+  const rows = await readSheetRows(config.google.lifeSheetId, "Todos").catch(() => []);
+  return {
+    demo: false,
+    items: sortTodos(rows.map((r) => ({ task: str(r["task"] ?? r["to-do"] ?? r["todo"]), priority: toPriority(r["priority"]), added: parseDate(r["added"]) || "", done: yes(r["done"]), row: Number(r.__row) }))
+      .filter((x) => x.task && !x.done).map((x) => ({ task: x.task, priority: x.priority, added: x.added, row: x.row }))),
+  };
 }
