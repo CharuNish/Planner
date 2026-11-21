@@ -1,3 +1,5 @@
+> **Not used any more (21 Nov 2026).** Charuka chose not to give Shortcuts access to Health data, so steps and workouts are now logged by hand on the Body & Health tab. You can delete the "Sync Health to Dashboard" shortcut and its automation. This guide stays here only in case you change your mind later.
+
 # ⌚ Apple Watch → Dashboard (free, every night)
 
 Apple doesn't let websites read Health data directly. So we use the **Shortcuts** app that's already on your iPhone:

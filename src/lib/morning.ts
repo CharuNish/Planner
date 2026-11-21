@@ -113,7 +113,6 @@ export async function gatherMorningFacts(): Promise<MorningFacts> {
     const a = analyseHealth(hea.days, today);
     const d = a.yesterday;
     if (d) rec.watch = { steps: d.steps, stepGoal: config.stepGoal, workoutMin: Math.round(d.workouts.reduce((x, w) => x + w.minutes, 0)), km: d.distanceKm, activeKcal: d.activeKcal, exerciseMin: d.exerciseMin, workouts: d.workouts.map((w) => `${w.type} ${Math.round(w.minutes)} min`), restingHr: d.restingHr, avgHr: d.avgHr, maxHr: d.maxHr, avgSteps7: a.avgSteps7 ? Math.round(a.avgSteps7) : null };
-    if (a.daysSinceSync !== null && a.daysSinceSync >= 2) todos.push({ icon: "⌚", text: `Your Apple Watch hasn't synced for ${a.daysSinceSync} days. Open Shortcuts and tap "Sync Health to Dashboard"` });
   }
   if (hl) rec.highlights = hl.items.filter((h) => h.date === y).map((h) => (h.photo ? `${h.text} (with a photo 📸)` : h.text));
   if (con) {
@@ -207,7 +206,7 @@ async function aiVoice(f: MorningFacts): Promise<Voice> {
   const prompt = `You are ${f.name}'s sassy, loving best friend texting her a good-morning message on Telegram.
 Style: Gen-Z hype-girl bestie, playful, warm, a bit cheeky, lots of emojis, short punchy lines, NOT professional, NOT generic quotes. Mix it up every day (today is ${f.todayWeekday} ${f.today}).
 Use ONLY the facts below with their real numbers. Never invent achievements, numbers or events. If something wasn't logged, don't mention it (or tease her gently to log it). Celebrate wins loudly; for misses be cheeky but kind and turn it into today's mission.
-"watch" is her Apple Watch data. Keep it SHORT and fun, max 2 lines, no stats dump (no kcal, no heart rate, no workout list): one line about how long she worked out (workoutMin, or exerciseMin if no workout) like "you worked out 45 min, are your muscles burning? 🔥", and one about her steps like "you walked 8.4k steps, way to go!" (tease cheekily if under stepGoal).
+"watch" is her steps + workouts (logged by hand). Keep it SHORT and fun, max 2 lines, no stats dump (no kcal, no heart rate, no workout list): one line about how long she worked out (workoutMin, or exerciseMin if no workout) like "you worked out 45 min, are your muscles burning? 🔥", and one about her steps like "you walked 8.4k steps, way to go!" (tease cheekily if under stepGoal).
 Each "highlights" item is a win / special thing she logged on her Wins page (steps, yoga, volunteering...): make a BIG deal of each one, by name.
 
 FACTS ABOUT YESTERDAY (${f.yesterday.weekday}):
