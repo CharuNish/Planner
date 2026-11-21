@@ -38,7 +38,7 @@ export default async function WeightPage({ searchParams }: { searchParams: Promi
 
   return (
     <div className="space-y-5">
-      <PageHeader title="💪 Body & Health" subtitle="Steps, heart and workouts from your Apple Watch, your glow-up in numbers, and real recipes for your kitchen"><WeightForm /></PageHeader>
+      <PageHeader title="💪 Body & Health" subtitle="Your steps, workouts, glow-up in numbers, and real recipes for your kitchen"><WeightForm /></PageHeader>
       {w.demo && <DemoBanner what="Life sheet" />}
 
       <HealthPanel days={hl.days} demo={hl.demo} hypeOffset={3} />

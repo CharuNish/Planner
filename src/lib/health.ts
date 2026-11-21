@@ -228,7 +228,7 @@ export function healthHype(a: HealthAnalysis, date = todayISO()): string[] {
   const d = a.yesterday ?? a.latest;
   const g = config.stepGoal;
   const k = (x: number) => Math.round(x).toLocaleString("en-US");
-  if (a.daysSinceSync !== null && a.daysSinceSync >= 2) out.push(`⌚ Your watch data hasn't come in for ${a.daysSinceSync} days. Did the Shortcut ghost us? Open it and tap ▶️, babe.`);
+  if (a.daysSinceSync !== null && a.daysSinceSync >= 2) out.push(`👟 No steps logged for ${a.daysSinceSync} days. Peek at your watch and pop the number in, babe.`);
   if (d?.steps != null) {
     if (d.steps >= g * 1.5) out.push(`${k(d.steps)} steps?? ${n}, that's not walking, that's a whole PILGRIMAGE 👟🔥`);
     else if (d.steps >= g) out.push(`${k(d.steps)} steps. Goal: eaten. Plate: clean. Legs: iconic 💅`);
@@ -241,7 +241,7 @@ export function healthHype(a: HealthAnalysis, date = todayISO()): string[] {
     out.push(diff >= 0 ? `📈 You're averaging ${k(a.avgSteps7)} steps a day, ${k(diff)} more than last week. Glow-up is measurable 📊` : `📉 ${k(a.avgSteps7)} steps a day this week vs ${k(a.avgStepsPrev7)} last week. We're not going backwards, ma'am.`);
   }
   if (a.workoutsWeek >= 3) out.push(`🏋️‍♀️ ${a.workoutsWeek} workouts (${a.workoutMinWeek} min) this week. Gym girlie era confirmed.`);
-  else if (a.workoutsWeek === 0 && a.latest) out.push(`🏋️‍♀️ Zero workouts logged this week. Your watch is literally waiting to buzz "close your rings". Give it something.`);
+  else if (a.workoutsWeek === 0 && a.latest) out.push(`🏋️‍♀️ Zero workouts logged this week. The dumbbells are getting lonely. Give them something.`);
   else if (a.workoutsWeek > 0) out.push(`🏋️‍♀️ ${a.workoutsWeek} workout${a.workoutsWeek > 1 ? "s" : ""} so far this week. ${3 - a.workoutsWeek} more for the gym streak 👀`);
   if (a.restingAvg7 && a.restingAvg30 && a.restingAvg7 < a.restingAvg30 - 1) out.push(`❤️ Resting heart rate down to ${Math.round(a.restingAvg7)} bpm (month avg ${Math.round(a.restingAvg30)}). Your heart is literally getting fitter. Cardio queen 👑`);
   if (a.best?.steps) out.push(`🏆 Personal best: ${k(a.best.steps)} steps. Coming for that record? 😤`);
@@ -254,7 +254,7 @@ function demoDays(): HealthDay[] {
   const t = todayISO(); const out: HealthDay[] = [];
   const types = ["Traditional Strength Training", "Outdoor Walk", "Yoga", "High Intensity Interval Training", "Elliptical"];
   for (let i = 40; i >= 1; i--) {
-    const steps = Math.round(4000 + r() * 9000 + (40 - i) * 40);
+    const steps = i === 1 ? 15420 : Math.round(4000 + r() * 9000 + (40 - i) * 40);
     const workouts: Workout[] = r() < 0.5 ? [{ type: types[Math.floor(r() * types.length)], minutes: Math.round(20 + r() * 40) }] : [];
     out.push({
       date: addDays(t, -i), steps, distanceKm: r1(steps * 0.00072), activeKcal: Math.round(180 + r() * 380), exerciseMin: Math.round(8 + r() * 50 + workouts.length * 20),
@@ -341,4 +341,47 @@ export function workoutPlan(days: HealthDay[], today = todayISO()) {
   else next = IDEAS[order[0]];
   const alsoNote = get("Walking").week.n >= 4 && get("Strength").week.n === 0 ? "Lots of walking but zero strength this week. Walking burns, lifting SHAPES. Add one." : null;
   return { byKind, week: week.length, weekMin: Math.round(week.reduce((s, w) => s + w.minutes, 0)), month: month.length, cardioMin, progress, topTypes, focus, next, alsoNote };
+}
+
+// ───── Manual step logging (Body & Health tab) ─────
+/** Saves the day's step count in the Health tab: updates that date's row, or adds one. */
+export async function saveSteps(date: string, steps: number) {
+  const sheet = config.google.lifeSheetId;
+  await ensureTab(sheet, HEALTH_TAB, HEALTH_HEADERS);
+  const now = new Intl.DateTimeFormat("en-GB", { timeZone: config.timezone, dateStyle: "medium", timeStyle: "short" }).format(new Date());
+  const rows = await readSheetRows(sheet, HEALTH_TAB);
+  const existing = rows.find((r) => parseDate(r["date"]) === date);
+  if (existing) return updateRow(sheet, HEALTH_TAB, Number(existing.__row), { Steps: steps, "Synced At": now });
+  return appendRow(sheet, HEALTH_TAB, [date, steps, "", "", "", "", "", "", "", "", "", now]);
+}
+
+/** This month's steps, day by day, plus how it compares. */
+export function stepMonth(days: HealthDay[], today = todayISO()) {
+  const month = today.slice(0, 7);
+  const [y, m] = month.split("-").map(Number);
+  const dim = new Date(Date.UTC(y, m, 0)).getUTCDate();
+  const get = (d: string) => days.find((x) => x.date === d)?.steps ?? null;
+  const list = Array.from({ length: dim }, (_, i) => { const date = `${month}-${String(i + 1).padStart(2, "0")}`; return { date, steps: date <= today ? get(date) : null }; });
+  const logged = list.filter((d) => d.steps !== null && d.steps > 0) as { date: string; steps: number }[];
+  const prevMonth = new Date(Date.UTC(y, m - 2, 1)).toISOString().slice(0, 7);
+  const prev = days.filter((d) => d.date.startsWith(prevMonth) && (d.steps ?? 0) > 0);
+  const avg = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null);
+  const best = logged.length ? logged.reduce((a, b) => (b.steps > a.steps ? b : a)) : null;
+  return {
+    list, logged: logged.length, total: logged.reduce((s, d) => s + d.steps, 0),
+    avg: avg(logged.map((d) => d.steps)), prevAvg: avg(prev.map((d) => d.steps ?? 0)),
+    goalDays: logged.filter((d) => d.steps >= config.stepGoal).length, best,
+    monthName: new Date(Date.UTC(y, m - 1, 1)).toLocaleDateString("en-GB", { month: "long", timeZone: "UTC" }),
+  };
+}
+
+/** Should the Body & Health tab throw a party? Looks at today, or yesterday if today isn't logged yet. */
+export function stepParty(days: HealthDay[], today = todayISO()): { date: string; steps: number; kind: "goal" | "huge" } | null {
+  const pick = days.find((d) => d.date === today && (d.steps ?? 0) > 0) ?? days.find((d) => d.date === addDays(today, -1) && (d.steps ?? 0) > 0);
+  if (!pick || pick.steps === null) return null;
+  const before = days.filter((d) => d.date < pick.date && d.date >= addDays(pick.date, -30) && (d.steps ?? 0) > 0).map((d) => d.steps as number);
+  const usual = before.length >= 5 ? before.reduce((a, b) => a + b, 0) / before.length : null;
+  if (usual && pick.steps >= usual * 1.4 && pick.steps >= config.stepGoal * 0.8) return { date: pick.date, steps: pick.steps, kind: "huge" };
+  if (pick.steps >= config.stepGoal) return { date: pick.date, steps: pick.steps, kind: "goal" };
+  return null;
 }

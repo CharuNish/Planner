@@ -1,6 +1,6 @@
 "use client";
 import { useActionState, useState, type ReactNode } from "react";
-import { logHabit, logMeasurements, logWorkout, logWeight, markRecipeMade, saveOpportunity } from "@/app/(app)/actions";
+import { logHabit, logMeasurements, logSteps, logWorkout, logWeight, markRecipeMade, saveOpportunity } from "@/app/(app)/actions";
 
 const today = () => new Date().toLocaleDateString("en-CA");
 function Msg({ s }: { s: { ok?: string; error?: string } | null }) {
@@ -179,6 +179,19 @@ export function WorkoutLogger({ choices, minutes, date }: { choices: string[]; m
         <input name="date" type="date" defaultValue={date || today()} className="input" />
         <button disabled={pending || !type} className="btn">{pending ? "Saving…" : "Log it"}</button>
       </div>
+      <Msg s={s} />
+    </form>
+  );
+}
+
+/** Type in today's step count from your watch. */
+export function StepForm({ last }: { last?: number }) {
+  const [s, action, pending] = useActionState(logSteps, null);
+  return (
+    <form action={action} className="flex flex-wrap gap-2 items-center">
+      <input name="steps" type="number" min="1" inputMode="numeric" placeholder={last ? `e.g. ${last}` : "Steps"} className="input w-32" required />
+      <input name="date" type="date" defaultValue={today()} className="input" />
+      <button disabled={pending} className="btn">{pending ? "Saving…" : "👟 Save steps"}</button>
       <Msg s={s} />
     </form>
   );

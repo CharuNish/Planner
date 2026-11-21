@@ -259,3 +259,15 @@ export async function completeTodo(row: number, task: string): Promise<{ ok?: st
   revalidatePath("/");
   return { ok: "Done ✓" };
 }
+
+export async function logSteps(_: Result, f: FormData): Promise<Result> {
+  const n = needLife(); if (n) return n;
+  const steps = Math.round(Number(String(f.get("steps") || "").replace(/[^0-9.]/g, "")));
+  if (!(steps > 0)) return { error: "How many steps? 👟" };
+  try {
+    const { saveSteps } = await import("@/lib/health");
+    await saveSteps(String(f.get("date") || todayISO()), steps);
+    revalidatePath("/weight");
+    return { ok: `${steps.toLocaleString("en-US")} steps saved 👟` };
+  } catch (e) { return { error: String(e) }; }
+}
