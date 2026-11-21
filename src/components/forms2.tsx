@@ -1,6 +1,6 @@
 "use client";
-import { useActionState, useState } from "react";
-import { habitCheckIn, logMeasurements, logWorkout, logWeight, markRecipeMade, saveOpportunity } from "@/app/(app)/actions";
+import { useActionState, useState, type ReactNode } from "react";
+import { logHabit, logMeasurements, logWorkout, logWeight, markRecipeMade, saveOpportunity } from "@/app/(app)/actions";
 
 const today = () => new Date().toLocaleDateString("en-CA");
 function Msg({ s }: { s: { ok?: string; error?: string } | null }) {
@@ -47,18 +47,77 @@ export function MadeItButton({ recipe, link, made }: { recipe: string; link: str
   );
 }
 
-export function HabitForm({ sleepTarget, waterTarget }: { sleepTarget: number; waterTarget: number }) {
-  const [s, action, pending] = useActionState(habitCheckIn, null);
+type HabitVals = { sleep: number | null; water: number | null; gym: boolean | null; notes: string };
+
+/** One small card per habit, each with its own Save, so you can log sleep, water and gym at different times. */
+export function HabitLogger({ sleepTarget, waterTarget, days }: { sleepTarget: number; waterTarget: number; days: Record<string, HabitVals> }) {
+  const [date, setDate] = useState(today());
+  const d = days[date] || { sleep: null, water: null, gym: null, notes: "" };
+  const isToday = date === today();
   return (
-    <form action={action} className="grid grid-cols-2 md:grid-cols-6 gap-2 items-center">
-      <label className="text-xs muted col-span-1">😴 Sleep (h)<input name="sleep" type="number" step="0.5" placeholder={`${sleepTarget}`} className="input w-full mt-1" /></label>
-      <label className="text-xs muted col-span-1">💧 Water (glasses)<input name="water" type="number" placeholder={`${waterTarget}`} className="input w-full mt-1" /></label>
-      <label className="text-sm flex items-center gap-2 mt-4"><input name="gym" type="checkbox" className="w-5 h-5 accent-[var(--accent)]" /> 🏋️ Went to gym</label>
-      <label className="text-xs muted">Date<input name="date" type="date" defaultValue={today()} className="input w-full mt-1" /></label>
-      <input name="notes" placeholder="Notes" className="input mt-4" />
-      <button disabled={pending} className="btn mt-4">{pending ? "Saving…" : "Check in"}</button>
-      <div className="col-span-full"><Msg s={s} /></div>
+    <div className="space-y-3">
+      <label className="text-xs muted flex items-center gap-2">Logging for
+        <input type="date" value={date} max={today()} onChange={(e) => setDate(e.target.value || today())} className="input" />
+        {!isToday && <button type="button" onClick={() => setDate(today())} className="text-xs underline">back to today</button>}
+        <span className="hidden md:inline">· each habit saves on its own</span>
+      </label>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <HabitCard habit="sleep" date={date} title="😴 Sleep" now={d.sleep === null ? "not logged yet" : `${d.sleep} h logged`}>
+          <input name="value" type="number" step="0.5" min="0" max="24" placeholder={`hours (goal ${sleepTarget})`} defaultValue={d.sleep ?? ""} key={`s${date}${d.sleep}`} className="input w-full" required />
+          <SaveBtn label="Save sleep" />
+        </HabitCard>
+        <HabitCard habit="water" date={date} title="💧 Water" now={d.water === null ? `0 / ${waterTarget} glasses` : `${d.water} / ${waterTarget} glasses`}>
+          <WaterButtons waterTarget={waterTarget} current={d.water} date={date} />
+        </HabitCard>
+        <HabitCard habit="gym" date={date} title="🏋️ Gym" now={d.gym === null ? "not logged yet" : d.gym ? "went ✓" : "rest day"}>
+          <div className="flex gap-2">
+            <button name="value" value="Yes" className="btn flex-1">Went 💪</button>
+            <button name="value" value="No" className="flex-1 rounded-lg px-3 py-1.5 text-sm font-medium border">Rest day</button>
+          </div>
+        </HabitCard>
+        <HabitCard habit="notes" date={date} title="📝 Note" now={d.notes ? d.notes : "optional"}>
+          <input name="value" placeholder="How was the day?" defaultValue={d.notes} key={`n${date}${d.notes}`} className="input w-full" required />
+          <SaveBtn label="Save note" />
+        </HabitCard>
+      </div>
+    </div>
+  );
+}
+
+function HabitCard({ habit, date, title, now, children }: { habit: string; date: string; title: string; now: string; children: ReactNode }) {
+  const [s, action, pending] = useActionState(logHabit, null);
+  return (
+    <form action={action} className="rounded-xl border p-4 space-y-2" aria-busy={pending}>
+      <input type="hidden" name="habit" value={habit} /><input type="hidden" name="date" value={date} />
+      <div className="flex items-baseline justify-between gap-2"><span className="font-medium">{title}</span><span className="text-xs muted truncate">{now}</span></div>
+      <fieldset disabled={pending} className="space-y-2">{children}</fieldset>
+      {pending ? <p className="text-sm muted">Saving…</p> : <Msg s={s} />}
     </form>
+  );
+}
+
+function SaveBtn({ label }: { label: string }) {
+  return <button className="btn w-full">{label}</button>;
+}
+
+function WaterButtons({ waterTarget, current, date }: { waterTarget: number; current: number | null; date: string }) {
+  const [custom, setCustom] = useState(false);
+  if (custom) return (
+    <div className="flex gap-2">
+      <input name="value" type="number" min="0" placeholder="total glasses" defaultValue={current ?? ""} key={`w${date}${current}`} className="input w-full" required />
+      <button className="btn">Set</button>
+      <button type="button" onClick={() => setCustom(false)} className="text-xs muted">×</button>
+    </div>
+  );
+  const pct = Math.min(100, ((current ?? 0) / Math.max(1, waterTarget)) * 100);
+  return (
+    <>
+      <div className="h-1.5 rounded-full bg-[var(--border)] overflow-hidden"><div className="h-full rounded-full" style={{ width: `${pct}%`, background: "var(--series-3)" }} /></div>
+      <div className="flex gap-2">
+        <button name="add" value="1" className="btn flex-1">+1 glass</button>
+        <button type="button" onClick={() => setCustom(true)} className="rounded-lg px-3 py-1.5 text-sm font-medium border">Set total</button>
+      </div>
+    </>
   );
 }
 

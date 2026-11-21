@@ -132,7 +132,7 @@ Upload **templates/Life-template.xlsx** the same way as before (**File → Save 
 | Tab | Columns | Notes |
 |---|---|---|
 | **Weight** | Date · Weight (kg) · Notes | Add a row whenever you weigh yourself (or use the button on the Weight tab). |
-| **Habits** | Date · Sleep (h) · Water (glasses) · Gym · Notes | Gym is `Yes` or `No`. The Habits tab has a quick check-in form that fills this for you. |
+| **Habits** | Date · Sleep (h) · Water (glasses) · Gym · Notes | Gym is `Yes` or `No`. The Habits tab has a quick card for each habit (sleep, water, gym, note). Each saves on its own into that day's row, so you can log them at different times. |
 | **Goals** | Goal · Category · Image URL · Target Date · Status · Progress (%) · Cost · Notes | Category: `Career`, `Buy`, `Travel`, `Learn`, `Health` or `Other`. Image URL is optional: leave it blank and a matching photo is found automatically, or paste any image link (right-click an image online → **Copy image address**). |
 | **RecipeLog** | Date · Recipe · Link · Rating · Comment | Filled in when you tick **I made this** on a recipe. |
 | **Opportunities** | Title · Type · Organisation · Deadline · Link · Status · Notes | Filled in when you **Save** an opportunity. Update Status as you go (Interested → Applying → Applied → Interview → Offer). |
