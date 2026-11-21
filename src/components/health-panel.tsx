@@ -2,7 +2,7 @@ import { StepsChart } from "@/components/charts";
 import { CountUp, Ring } from "@/components/fx";
 import { Hype } from "@/components/hype";
 import { StepForm, WorkoutLogger } from "@/components/forms2";
-import { StepFireworks } from "@/components/step-fireworks";
+import { StepParty } from "@/components/step-party";
 import { ProgressBar, Section, Stat } from "@/components/ui";
 import { config } from "@/lib/config";
 import { prettyDate, todayISO } from "@/lib/dates";
@@ -29,10 +29,10 @@ export function HealthPanel({ days, demo, hypeOffset = 0 }: { days: HealthDay[];
   return (
     <div id="health" className="space-y-5">
       {party && (
-        <StepFireworks
+        <StepParty
           id={`steps-${party.kind}-${party.date}${demo ? "-demo" : ""}`}
           big={party.kind === "huge"}
-          title={party.kind === "huge" ? `🎆 WHOA! ${k(party.steps)} steps ${party.date === today ? "today" : "yesterday"}!` : `🎉 Hurray! Step goal smashed: ${k(party.steps)} steps!`}
+          title={party.kind === "huge" ? `🌟 WHOA! ${k(party.steps)} steps ${party.date === today ? "today" : "yesterday"}!` : `🎊 Hurray! Step goal smashed: ${k(party.steps)} steps!`}
           sub={party.kind === "huge" ? "That's way more than your usual. Legs of steel, honestly 🦵✨" : `Goal was ${k(goal)}. Look at you go, queen 👑`}
         />
       )}
