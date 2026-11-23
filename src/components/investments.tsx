@@ -1,19 +1,17 @@
 import { config } from "@/lib/config";
-import { daysBetween, prettyDate, relativeDays, todayISO } from "@/lib/dates";
+import { daysBetween, relativeDays, todayISO } from "@/lib/dates";
 import { fmt } from "@/lib/finance";
-import { analyseInvestments, isInterestType, type Investment } from "@/lib/investments";
+import { analyseInvestments, type Investment } from "@/lib/investments";
 import { ALLOC_COLORS, AllocationChart } from "./investment-chart";
 import { AddInvestmentForm } from "./investment-form";
-import { Empty, ProgressBar, Section, Stat } from "./ui";
+import { Empty, Section, Stat } from "./ui";
 
 const pct = (n: number) => `${Math.round(n * 10) / 10}%`;
-const countdown = (d: number) => (d === 0 ? "today 🎉" : d === 1 ? "tomorrow" : d < 0 ? `${-d} days ago` : d < 60 ? `in ${d} days` : `in ${Math.round(d / 30.4)} months`);
 
 export function InvestmentsSection({ items }: { items: Investment[] }) {
   const a = analyseInvestments(items);
   const today = todayISO();
   const gain = a.value - a.invested;
-  const next = a.upcoming[0];
 
   return (
     <div id="investments" className="space-y-5 scroll-mt-4 pt-2">
@@ -26,16 +24,11 @@ export function InvestmentsSection({ items }: { items: Investment[] }) {
         <AddInvestmentForm />
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
         <Stat label="Worth today" value={fmt(a.value)} hint={`${fmt(a.invested)} put in${gain ? ` · ${gain > 0 ? "+" : "−"}${fmt(Math.abs(gain))}` : ""}`} tone={gain < 0 ? "bad" : "good"} />
         <Stat label="Earned so far" value={fmt(a.earned)} hint={a.monthlyIncome ? `+ ${fmt(a.monthlyIncome)} a month from monthly-interest FDs` : "interest + gains to date"} tone="good" />
         <Stat label="FD interest this term" value={fmt(a.expectedInterest)} hint={a.avgRate ? `avg rate ${pct(a.avgRate)} · ≈ ${fmt(a.yearlyInterest)} a year` : "add FDs with a rate"} />
-        <Stat label="Next maturity" value={next ? countdown(next.daysLeft!) : "—"} hint={next ? `${next.name}: ${fmt(next.maturityValue)} on ${prettyDate(next.periodEnd, { day: "numeric", month: "short" })}` : "no FDs maturing yet"} tone={next && next.daysLeft! <= 7 ? "warn" : undefined} />
       </div>
-
-      {a.overdue.length > 0 && (
-        <div className="card p-4 text-sm">⏰ <b>{a.overdue.map((h) => h.name).join(", ")}</b> already matured. Renew {a.overdue.length > 1 ? "them" : "it"} (new row with the new dates) or set Status to <b>Matured</b> in the sheet so the money isn&apos;t sitting idle.</div>
-      )}
 
       <div className="grid lg:grid-cols-3 gap-5">
         <Section title="Where your money is">
@@ -52,44 +45,13 @@ export function InvestmentsSection({ items }: { items: Investment[] }) {
           </>) : <Empty>Nothing yet. Add your first FD with the button above, or type it into the Investments tab.</Empty>}
         </Section>
 
-        <Section title="⏳ Upcoming maturities" className="lg:col-span-2">
-          {a.upcoming.length ? (
-            <ul className="space-y-4">
-              {a.upcoming.slice(0, 6).map((h, i) => (
-                <li key={i}>
-                  <div className="flex justify-between text-sm gap-2">
-                    <span className="min-w-0">
-                      <span className="font-medium">{h.name}</span>
-                      <span className="muted text-xs"> · {h.institution || h.type}{h.rate ? ` · ${pct(h.rate)}` : ""}</span>
-                      {h.autoRenew && <span className="chip soft ml-1">auto-renew{h.renewals ? ` ×${h.renewals}` : ""}</span>}
-                    </span>
-                    <span className="text-right shrink-0">
-                      <span className="tabular font-medium">{fmt(h.maturityValue)}</span>
-                      <span className={`block text-xs ${h.daysLeft! <= 7 ? "text-warn" : "muted"}`}>{prettyDate(h.periodEnd)} · {countdown(h.daysLeft!)}</span>
-                    </span>
-                  </div>
-                  <div className="mt-1.5"><ProgressBar value={h.progress} tone={h.daysLeft! <= 7 ? "warn" : "accent"} /></div>
-                  <div className="text-xs muted mt-0.5">
-                    {fmt(h.principal)} → +{fmt(h.expectedInterest)} interest
-                    {h.payout === "Monthly" ? ` (paid ${fmt(h.monthlyPayout)} monthly)` : h.payout === "Yearly" ? " (paid yearly)" : ""}
-                    {` · ${Math.round(h.progress * 100)}% of the term done`}
-                  </div>
-                </li>
-              ))}
-            </ul>
-          ) : <Empty>No fixed deposits, bills or bonds with a maturity date yet.</Empty>}
-        </Section>
-      </div>
-
-      <div className="grid lg:grid-cols-3 gap-5">
         <Section title="All holdings" className="lg:col-span-2">
           {a.active.length ? (
             <div className="overflow-x-auto -mx-1">
-              <table className="w-full text-sm min-w-[560px]">
+              <table className="w-full text-sm min-w-[380px]">
                 <thead><tr className="text-left kicker">
                   <th className="py-1.5 px-1 font-medium">Name</th><th className="px-1 font-medium text-right">Put in</th>
                   <th className="px-1 font-medium text-right">Rate</th><th className="px-1 font-medium text-right">Worth now</th>
-                  <th className="px-1 font-medium text-right">Earned</th><th className="px-1 font-medium text-right">Matures</th>
                 </tr></thead>
                 <tbody>
                   {[...a.active].sort((x, y) => y.value - x.value).map((h, i) => (
@@ -98,8 +60,6 @@ export function InvestmentsSection({ items }: { items: Investment[] }) {
                       <td className="px-1 text-right tabular">{fmt(h.amount)}</td>
                       <td className="px-1 text-right tabular muted">{h.rate ? pct(h.rate) : "—"}</td>
                       <td className="px-1 text-right tabular">{fmt(h.value)}</td>
-                      <td className={`px-1 text-right tabular ${h.earned < 0 ? "text-bad" : "text-good"}`}>{h.earned ? `${h.earned > 0 ? "+" : "−"}${fmt(Math.abs(h.earned))}` : "—"}</td>
-                      <td className="px-1 text-right text-xs muted">{h.periodEnd ? <>{prettyDate(h.periodEnd, { day: "numeric", month: "short", year: "2-digit" })}<br />{countdown(h.daysLeft!)}</> : isInterestType(h.type) ? "any time" : "—"}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -108,7 +68,9 @@ export function InvestmentsSection({ items }: { items: Investment[] }) {
             </div>
           ) : <Empty>No active investments yet.</Empty>}
         </Section>
+      </div>
 
+      <div className="grid lg:grid-cols-3 gap-5">
         <Section title="🌱 Planned FDs & investments">
           {a.planned.length ? (
             <ul className="space-y-3 text-sm">
@@ -121,7 +83,6 @@ export function InvestmentsSection({ items }: { items: Investment[] }) {
                       {h.institution || h.type}{h.rate ? ` · ${pct(h.rate)}` : ""}{h.termMonths ? ` · ${h.termMonths} months` : ""}
                       {d !== null ? ` · ${d >= 0 ? `start ${relativeDays(d)}` : `was due ${relativeDays(d)}`}` : ""}
                     </div>
-                    {h.expectedInterest > 0 && <div className="text-xs text-good">→ about {fmt(h.maturityValue)} at the end (+{fmt(h.expectedInterest)})</div>}
                   </li>
                 );
               })}
