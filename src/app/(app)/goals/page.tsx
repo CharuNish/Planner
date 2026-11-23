@@ -1,5 +1,6 @@
 import { TravelGlobe } from "@/components/globe";
 import { SafeImg } from "@/components/img";
+import { GoalPhotoButton } from "@/components/goal-photo";
 import { placeIn } from "@/lib/places";
 import { DemoBanner, Empty, PageHeader, ProgressBar } from "@/components/ui";
 import { config } from "@/lib/config";
@@ -19,7 +20,7 @@ const CAT: Record<string, { icon: string; title: string }> = {
 export default async function GoalsPage() {
   const { demo, goals } = await loadGoals();
   const today = todayISO();
-  const withImages = await Promise.all(goals.map(async (g) => ({ ...g, image: g.image || (await imageFor(g.goal)) })));
+  const withImages = await Promise.all(goals.map(async (g) => ({ ...g, own: !!g.image, image: g.image || (await imageFor(g.goal)) })));
   const groups = new Map<string, typeof withImages>();
   for (const g of withImages) { const k = CAT[g.category.toLowerCase()] ? g.category.toLowerCase() : "other"; groups.set(k, [...(groups.get(k) || []), g]); }
   const done = goals.filter((g) => /done|achiev|complete/i.test(g.status)).length;
@@ -60,8 +61,9 @@ export default async function GoalsPage() {
               return (
                 <article key={g.goal} className={`card overflow-hidden flex flex-col ${achieved ? "ring-2 ring-[var(--good)]" : ""}`}>
                   <div className="relative">
-                    <SafeImg src={g.image} alt={g.goal} emoji={CAT[k].icon} className="w-full h-28 md:h-36" />
+                    <SafeImg key={g.image} src={g.image} alt={g.goal} emoji={CAT[k].icon} className="w-full h-28 md:h-36" />
                     <span className="absolute top-2 left-2 chip" style={{ background: "rgba(0,0,0,.55)", color: "white" }}>{achieved ? "🏆 Done" : g.status}</span>
+                    {!demo && <GoalPhotoButton goal={g.goal} hasPhoto={g.own} />}
                   </div>
                   <div className="p-4 flex flex-col gap-2 flex-1">
                     <h3 className="font-medium leading-snug">{g.goal}</h3>
@@ -80,7 +82,7 @@ export default async function GoalsPage() {
           </div>
         </section>
       ))}
-      <p className="text-xs muted">Photos without an Image URL come from Openverse (openly licensed). Paste your own image link in the sheet to change one.</p>
+      <p className="text-xs muted">Tap 📷 on any goal to upload your own photo from your computer or phone. Goals without one get a free matching photo from Openverse.</p>
     </div>
   );
 }

@@ -127,6 +127,8 @@ export function analyseHabits(days: HabitDay[]) {
 }
 
 // ───── Goals ─────
+export const GOAL_PHOTOS_TAB = "GoalPhotos";
+export const goalKey = (g: string) => g.toLowerCase().replace(/\s+/g, " ").trim();
 export async function loadGoals(): Promise<{ demo: boolean; goals: Goal[] }> {
   if (lifeIsDemo()) {
     const g = (goal: string, category: string, status: string, progress = 0, targetDate = "", cost = 0, notes = "") => ({ goal, category, image: "", targetDate, status, progress, notes, cost });
@@ -137,9 +139,13 @@ export async function loadGoals(): Promise<{ demo: boolean; goals: Goal[] }> {
       g("Learn Japanese (JLPT N5)", "Learn", "In progress", 25), g("Learn to swim properly", "Learn", "Planning", 0),
     ] };
   }
-  const rows = await tab("Goals");
+  const [rows, photoRows] = await Promise.all([tab("Goals"), tab(GOAL_PHOTOS_TAB).catch(() => [])]);
+  // Photos uploaded on the site live in an auto-made "GoalPhotos" tab (Goal | Photo | Updated). Newest row per goal wins.
+  const photos = new Map<string, string>();
+  for (const r of photoRows) { const k = goalKey(str(r["goal"])); if (k) photos.set(k, str(r["photo"])); }
   return { demo: false, goals: rows.map((r) => ({
-    goal: str(r["goal"]), category: str(r["category"]) || "Other", image: str(r["image url"] ?? r["image"]), targetDate: parseDate(r["target date"]) || "",
+    goal: str(r["goal"]), category: str(r["category"]) || "Other",
+    image: photos.get(goalKey(str(r["goal"]))) || str(r["image url"] ?? r["image"]), targetDate: parseDate(r["target date"]) || "",
     status: str(r["status"]) || "Dream", progress: Math.max(0, Math.min(100, num(r["progress (%)"] ?? r["progress"]))), notes: str(r["notes"]), cost: num(r["cost"]),
   })).filter((g) => g.goal) };
 }

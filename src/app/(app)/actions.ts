@@ -177,6 +177,31 @@ export async function retryDaily(f: FormData) {
   revalidatePath("/updates"); revalidatePath("/content");
 }
 
+// ───── Goal photos ─────
+/** Uploads a photo for one mini goal to Vercel Blob and remembers it in the auto-made "GoalPhotos" tab. */
+export async function setGoalPhoto(_: Result, f: FormData): Promise<Result> {
+  const n = needLife(); if (n) return n;
+  const goal = String(f.get("goal") || "").trim();
+  if (!goal) return { error: "Which goal is this for?" };
+  const file = f.get("photo");
+  if (!(file instanceof File) || !file.size) return { error: "Pick a photo first." };
+  if (!process.env.BLOB_READ_WRITE_TOKEN) return { error: "Photo uploads need the free Vercel Blob storage switched on first (SETUP.md, 'Wins photos')." };
+  if (file.size > 4 * 1024 * 1024) return { error: "That photo is too big (max 4 MB)." };
+  let url = "";
+  try {
+    const { put } = await import("@vercel/blob");
+    const ext = file.type === "image/png" ? "png" : file.type === "image/webp" ? "webp" : "jpg";
+    const blob = await put(`goals/${goal.slice(0, 40).replace(/[^a-z0-9]+/gi, "-").toLowerCase()}.${ext}`, file, { access: "public", addRandomSuffix: true, contentType: file.type || "image/jpeg" });
+    url = blob.url;
+  } catch (e) { return { error: `Photo upload failed: ${String(e).slice(0, 160)}` }; }
+  try {
+    const { GOAL_PHOTOS_TAB } = await import("@/lib/life");
+    await appendRowCreatingTab(config.google.lifeSheetId, GOAL_PHOTOS_TAB, ["Goal", "Photo", "Updated"], [goal, url, todayISO()]);
+  } catch (e) { return { error: String(e) }; }
+  revalidatePath("/goals");
+  return { ok: "Looking cute ✨" };
+}
+
 // ───── Wins ─────
 export async function addWin(_: Result, f: FormData): Promise<Result> {
   const n = needLife(); if (n) return n;
