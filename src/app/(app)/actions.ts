@@ -2,7 +2,7 @@
 import { revalidatePath, revalidateTag } from "next/cache";
 import { calendarIsDemo, config, financeIsDemo, lifeIsDemo, studiesIsDemo } from "@/lib/config";
 import { addDays, parseDate, todayISO } from "@/lib/dates";
-import { blobToken, NO_BLOB_MSG } from "@/lib/blob";
+import { blobAuth, noBlobMsg } from "@/lib/blob";
 import { appendRow, appendRowCreatingTab, ensureTab, insertEvent, num, readSheetRows, str, updateRow } from "@/lib/google";
 
 type Result = { ok?: string; error?: string } | null;
@@ -186,14 +186,14 @@ export async function setGoalPhoto(_: Result, f: FormData): Promise<Result> {
   if (!goal) return { error: "Which goal is this for?" };
   const file = f.get("photo");
   if (!(file instanceof File) || !file.size) return { error: "Pick a photo first." };
-  const token = blobToken();
-  if (!token) return { error: NO_BLOB_MSG };
+  const auth = blobAuth();
+  if (!auth) return { error: noBlobMsg() };
   if (file.size > 4 * 1024 * 1024) return { error: "That photo is too big (max 4 MB)." };
   let url = "";
   try {
     const { put } = await import("@vercel/blob");
     const ext = file.type === "image/png" ? "png" : file.type === "image/webp" ? "webp" : "jpg";
-    const blob = await put(`goals/${goal.slice(0, 40).replace(/[^a-z0-9]+/gi, "-").toLowerCase()}.${ext}`, file, { access: "public", addRandomSuffix: true, contentType: file.type || "image/jpeg", token });
+    const blob = await put(`goals/${goal.slice(0, 40).replace(/[^a-z0-9]+/gi, "-").toLowerCase()}.${ext}`, file, { access: "public", addRandomSuffix: true, contentType: file.type || "image/jpeg", ...auth });
     url = blob.url;
   } catch (e) { return { error: `Photo upload failed: ${String(e).slice(0, 160)}` }; }
   try {
@@ -213,13 +213,13 @@ export async function addWin(_: Result, f: FormData): Promise<Result> {
   let photo = String(f.get("photoUrl") || "").trim();
   const file = f.get("photo");
   if (file instanceof File && file.size > 0) {
-    const token = blobToken();
-    if (!token) return { error: `${NO_BLOB_MSG} You can save the win without a photo for now.` };
+    const auth = blobAuth();
+    if (!auth) return { error: `${noBlobMsg()} You can save the win without a photo for now.` };
     if (file.size > 4 * 1024 * 1024) return { error: "That photo is too big (max 4 MB)." };
     try {
       const { put } = await import("@vercel/blob");
       const ext = file.type === "image/png" ? "png" : file.type === "image/webp" ? "webp" : "jpg";
-      const blob = await put(`wins/${date}-${text.slice(0, 30).replace(/[^a-z0-9]+/gi, "-").toLowerCase()}.${ext}`, file, { access: "public", addRandomSuffix: true, contentType: file.type || "image/jpeg", token });
+      const blob = await put(`wins/${date}-${text.slice(0, 30).replace(/[^a-z0-9]+/gi, "-").toLowerCase()}.${ext}`, file, { access: "public", addRandomSuffix: true, contentType: file.type || "image/jpeg", ...auth });
       photo = blob.url;
     } catch (e) { return { error: `Photo upload failed: ${String(e).slice(0, 160)}` }; }
   }
