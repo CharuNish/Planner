@@ -1,5 +1,4 @@
 import { config } from "@/lib/config";
-import { daysBetween, relativeDays, todayISO } from "@/lib/dates";
 import { fmt } from "@/lib/finance";
 import { analyseInvestments, type Investment } from "@/lib/investments";
 import { ALLOC_COLORS, AllocationChart } from "./investment-chart";
@@ -10,7 +9,6 @@ const pct = (n: number) => `${Math.round(n * 10) / 10}%`;
 
 export function InvestmentsSection({ items }: { items: Investment[] }) {
   const a = analyseInvestments(items);
-  const today = todayISO();
   const gain = a.value - a.invested;
 
   return (
@@ -62,31 +60,9 @@ export function InvestmentsSection({ items }: { items: Investment[] }) {
                   ))}
                 </tbody>
               </table>
-              <p className="text-xs muted mt-3">FD interest is worked out from the rate and dates (before tax). For shares, unit trusts and gold, update <b>Current Value</b> in the sheet when you check the price.</p>
+              <p className="text-xs muted mt-3">For shares, unit trusts and gold, update <b>Current Value</b> in the sheet when you check the price.</p>
             </div>
           ) : <Empty>No active investments yet.</Empty>}
-        </Section>
-      </div>
-
-      <div className="grid lg:grid-cols-3 gap-5">
-        <Section title="🌱 Planned FDs & investments">
-          {a.planned.length ? (
-            <ul className="space-y-3 text-sm">
-              {a.planned.map((h, i) => {
-                const d = h.start ? daysBetween(today, h.start) : null;
-                return (
-                  <li key={i}>
-                    <div className="flex justify-between gap-2"><span className="font-medium">{h.name}</span><span className="tabular">{fmt(h.amount)}</span></div>
-                    <div className="text-xs muted">
-                      {h.institution || h.type}{h.rate ? ` · ${pct(h.rate)}` : ""}{h.termMonths ? ` · ${h.termMonths} months` : ""}
-                      {d !== null ? ` · ${d >= 0 ? `start ${relativeDays(d)}` : `was due ${relativeDays(d)}`}` : ""}
-                    </div>
-                  </li>
-                );
-              })}
-              <li className="flex justify-between pt-2 border-t font-semibold" style={{ borderColor: "var(--border)" }}><span>Money to set aside</span><span className="tabular">{fmt(a.plannedTotal)}</span></li>
-            </ul>
-          ) : <Empty>Planning an FD? Add it with Status <b>Planned</b> (or a future start date) and it shows up here with a countdown.</Empty>}
         </Section>
       </div>
     </div>
