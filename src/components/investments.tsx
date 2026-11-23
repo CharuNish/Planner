@@ -26,8 +26,6 @@ export function InvestmentsSection({ items }: { items: Investment[] }) {
 
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
         <Stat label="Worth today" value={fmt(a.value)} hint={`${fmt(a.invested)} put in${gain ? ` · ${gain > 0 ? "+" : "−"}${fmt(Math.abs(gain))}` : ""}`} tone={gain < 0 ? "bad" : "good"} />
-        <Stat label="Earned so far" value={fmt(a.earned)} hint={a.monthlyIncome ? `+ ${fmt(a.monthlyIncome)} a month from monthly-interest FDs` : "interest + gains to date"} tone="good" />
-        <Stat label="FD interest this term" value={fmt(a.expectedInterest)} hint={a.avgRate ? `avg rate ${pct(a.avgRate)} · ≈ ${fmt(a.yearlyInterest)} a year` : "add FDs with a rate"} />
       </div>
 
       <div className="grid lg:grid-cols-3 gap-5">
