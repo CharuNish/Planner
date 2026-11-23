@@ -284,6 +284,17 @@ Every bill in the **Bills** tab is added to your Google Calendar as an all-day, 
 - **Your sheet is never changed.** The planner only reads it.
 - **If you see "no access (403)":** the robot can only read your calendar. Open [Google Calendar](https://calendar.google.com) → ⚙️ **Settings** → click your calendar on the left → **Shared with** → next to the robot's email pick **Make changes to events**.
 
+## 16. Birthdays (Calendar tab)
+
+Google keeps birthdays private to you. Even though your calendar is shared with the planner's robot account, Google never shows birthdays to anyone you share with, so the website can't read them from Google Calendar. Instead, birthdays live in a **Birthdays** tab in your Life sheet. Nothing to set up:
+
+1. Open the website and go to **Calendar**.
+2. Scroll to **🎂 Birthdays** and tap **+ Add a birthday**.
+3. Type the name, pick the date, and tick **I know the year** only if you know it (then it says "turns 27"). Add a note like a gift idea if you want. Tap **Save 🎂**.
+4. The first time, this creates the **Birthdays** tab in your Life sheet by itself. You can also type straight into that tab: `Name | Birthday | Year Born | Note`, for example `Amma | 2 Dec | 1968 | saree`.
+
+Birthdays then show in the Calendar agenda (pink "Birthday" tag), on Home, and in the Telegram messages, every year.
+
 ## Running it on your laptop (optional, for tinkering)
 
 1. Install [Node.js](https://nodejs.org) (the LTS version).

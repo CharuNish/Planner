@@ -282,3 +282,23 @@ export async function syncBills(_: Result): Promise<Result> {
     return { ok: parts.length ? `Calendar updated ✓ (${parts.join(", ")})` : "Your calendar already has all your bills ✓" };
   } catch (e) { return { error: String(e).slice(0, 300) }; }
 }
+
+// ───── Birthdays (Life sheet "Birthdays" tab) ─────
+export async function addBirthday(_: Result, f: FormData): Promise<Result> {
+  const n = needLife(); if (n) return n;
+  const name = String(f.get("name") || "").trim().slice(0, 80);
+  const date = String(f.get("date") || "");
+  const knowYear = f.get("knowYear") === "on";
+  const note = String(f.get("note") || "").trim().slice(0, 200);
+  if (!name || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return { error: "Add a name and a date 🎂" };
+  const MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  // Written as plain text like "14 May" so the sheet doesn't pin it to one year.
+  const dayMonth = `'${Number(date.slice(8, 10))} ${MON[Number(date.slice(5, 7)) - 1]}`;
+  const sheet = config.google.lifeSheetId;
+  try {
+    await ensureTab(sheet, "Birthdays", ["Name", "Birthday", "Year Born", "Note"]);
+    await appendRow(sheet, "Birthdays", [name, dayMonth, knowYear ? date.slice(0, 4) : "", note]);
+  } catch (e) { return { error: String(e) }; }
+  revalidatePath("/", "layout");
+  return { ok: `Saved ${name}'s birthday 🎂` };
+}

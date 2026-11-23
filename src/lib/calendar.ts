@@ -2,10 +2,11 @@ import { calendarIsDemo, config } from "./config";
 import { addDays, todayISO, toISODate } from "./dates";
 import { demoEvents } from "./demo";
 import { listEvents } from "./google";
+import { loadBirthdays, nextBirthday } from "./life";
 
 export type CalEvent = { id: string; date: string; time: string | null; endTime: string | null; title: string; category: string; location: string; source: string };
 
-export const CATEGORIES = ["Meeting", "Lecture", "Class", "Exam", "Deadline", "Gym", "Bill", "Subscription", "Payment", "Function", "Event", "Other"] as const;
+export const CATEGORIES = ["Meeting", "Lecture", "Class", "Exam", "Deadline", "Gym", "Bill", "Subscription", "Payment", "Birthday", "Function", "Event", "Other"] as const;
 
 export const CATEGORY_STYLE: Record<string, string> = {
   Meeting: "bg-sky-100 text-sky-800 dark:bg-sky-900/40 dark:text-sky-200",
@@ -17,6 +18,7 @@ export const CATEGORY_STYLE: Record<string, string> = {
   Bill: "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200",
   Subscription: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-200",
   Payment: "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200",
+  Birthday: "bg-pink-100 text-pink-800 dark:bg-pink-900/40 dark:text-pink-200",
   Function: "bg-fuchsia-100 text-fuchsia-800 dark:bg-fuchsia-900/40 dark:text-fuchsia-200",
   Event: "bg-violet-100 text-violet-800 dark:bg-violet-900/40 dark:text-violet-200",
   Other: "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200",
@@ -24,7 +26,7 @@ export const CATEGORY_STYLE: Record<string, string> = {
 
 export const CATEGORY_DOT: Record<string, string> = {
   Meeting: "#0ea5e9", Lecture: "#6366f1", Class: "#6366f1", Exam: "#f43f5e", Deadline: "#f97316", Gym: "#10b981",
-  Bill: "#f59e0b", Subscription: "#eab308", Payment: "#f59e0b", Function: "#d946ef", Event: "#8b5cf6", Other: "#a1a1aa",
+  Bill: "#f59e0b", Subscription: "#eab308", Payment: "#f59e0b", Birthday: "#ec4899", Function: "#d946ef", Event: "#8b5cf6", Other: "#a1a1aa",
 };
 
 /** Guesses a category. Tip: start an event title with "[Gym]" or "Exam:" to force it. */
@@ -40,15 +42,34 @@ export function categorise(title: string, description = ""): string {
     ["Gym", /\b(gym|workout|run|yoga|training)\b/], ["Bill", /\b(bill|rent|electric|water|ceb|internet)\b/],
     ["Subscription", /\b(subscription|renewal|netflix|spotify|medium|icloud)\b/], ["Payment", /\b(payment|pay|loan|installment)\b/],
     ["Lecture", /\b(lecture)\b/], ["Class", /\b(class|tutorial|lab)\b/], ["Meeting", /\b(meeting|call|zoom|meet|sync|1:1)\b/],
-    ["Function", /\b(wedding|birthday|party|function|funeral|almsgiving|dana)\b/],
+    ["Birthday", /\b(birthday|bday|b-day)\b/],
+    ["Function", /\b(wedding|party|function|funeral|almsgiving|dana)\b/],
   ];
   return rules.find(([, re]) => re.test(t))?.[0] || "Event";
 }
 
 const clean = (title: string) => title.replace(/^\s*\[[^\]]+\]\s*/, "");
 
+/** Birthdays from the Life sheet's "Birthdays" tab that fall between two dates, as calendar items. */
+export async function birthdayEvents(from: string, to: string): Promise<CalEvent[]> {
+  const { items } = await loadBirthdays().catch(() => ({ items: [] as Awaited<ReturnType<typeof loadBirthdays>>["items"] }));
+  return items.map((b) => ({ b, n: nextBirthday(b, from) })).filter(({ n }) => n.date <= to).map(({ b, n }) => ({
+    id: `bday-${b.name}-${n.date}`, date: n.date, time: null, endTime: null,
+    title: `🎂 ${b.name}'s birthday${n.turning ? ` (turns ${n.turning})` : ""}`, category: "Birthday", location: b.note, source: "sheet",
+  }));
+}
+
+/** Adds sheet birthdays, skipping any that your Google Calendar already shows on the same day. */
+function withBirthdays(events: CalEvent[], bdays: CalEvent[]) {
+  const name = (t: string) => t.replace(/🎂|'s birthday.*$|birthday/gi, "").trim().toLowerCase();
+  const fresh = bdays.filter((b) => !events.some((e) => e.date === b.date && e.category === "Birthday" && name(e.title).includes(name(b.title))));
+  return [...events, ...fresh].sort((a, b) => (a.date + (a.time || "00:00")).localeCompare(b.date + (b.time || "00:00")));
+}
+
 export async function loadEvents(days = 45, pastDays = 0): Promise<{ demo: boolean; events: CalEvent[]; error?: string }> {
-  if (calendarIsDemo()) return { demo: true, events: demoEvents() };
+  const from = addDays(todayISO(), -pastDays);
+  const bdays = birthdayEvents(from, addDays(todayISO(), days));
+  if (calendarIsDemo()) return { demo: true, events: withBirthdays(demoEvents(), await bdays) };
   const start = addDays(todayISO(), -pastDays);
   const timeMin = new Date(start + "T00:00:00Z").toISOString();
   const timeMax = new Date(addDays(start, days + pastDays) + "T23:59:59Z").toISOString();
@@ -61,19 +82,19 @@ export async function loadEvents(days = 45, pastDays = 0): Promise<{ demo: boole
         // Bills the planner put in your calendar are already shown from the Bills sheet, so skip them here.
         if (e.extendedProperties?.private?.plannerBill) continue;
         const title = e.summary || "(no title)";
+        const isBday = e.eventType === "birthday";
         const dt = e.start.dateTime ? new Date(e.start.dateTime) : null;
         const et = e.end?.dateTime ? new Date(e.end.dateTime) : null;
         const time = dt ? dt.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: config.timezone, hour12: false }) : null;
         all.push({
           id: e.id, date: dt ? toISODate(dt) : (e.start.date || ""), time,
           endTime: et ? et.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: config.timezone, hour12: false }) : null,
-          title: clean(title), category: categorise(title, e.description), location: e.location || "", source: cid,
+          title: clean(title), category: isBday ? "Birthday" : categorise(title, e.description), location: e.location || "", source: cid,
         });
       }
     } catch (err) {
       error = String(err);
     }
   }));
-  all.sort((a, b) => (a.date + (a.time || "00:00")).localeCompare(b.date + (b.time || "00:00")));
-  return { demo: false, events: all, error };
+  return { demo: false, events: withBirthdays(all, await bdays), error };
 }

@@ -1,6 +1,6 @@
 "use client";
 import { useActionState, useState } from "react";
-import { addEvent, addTransaction, logStudy, syncBills } from "@/app/(app)/actions";
+import { addBirthday, addEvent, addTransaction, logStudy, syncBills } from "@/app/(app)/actions";
 
 const today = () => new Date().toLocaleDateString("en-CA");
 
@@ -78,5 +78,23 @@ export function SyncBillsButton() {
       <button disabled={pending} className="text-xs text-accent">{pending ? "Adding to calendar…" : "📅 Add to my calendar now"}</button>
       {s && <span className={`text-xs ${s.error ? "text-bad" : "text-good"}`}>{s.error || s.ok}</span>}
     </form>
+  );
+}
+
+/** Saves a birthday to the "Birthdays" tab of your Life sheet (creates the tab the first time). */
+export function AddBirthdayForm() {
+  const [s, action, pending] = useActionState(addBirthday, null);
+  return (
+    <Toggle label="+ Add a birthday">
+      <form action={action} className="card p-4 grid grid-cols-2 md:grid-cols-6 gap-2 items-center w-full">
+        <input name="name" placeholder="Whose birthday?" className="input col-span-2" required />
+        <input name="date" type="date" className="input" required />
+        <label className="text-xs flex items-center gap-1.5"><input type="checkbox" name="knowYear" /> I know the year</label>
+        <input name="note" placeholder="Note (gift idea…)" className="input" />
+        <button disabled={pending} className="btn">{pending ? "Saving…" : "Save 🎂"}</button>
+        <div className="col-span-full text-xs muted">Don&apos;t know the year? Pick any year and leave the box unticked. Only the day and month are used.</div>
+        <div className="col-span-full"><Msg s={s} /></div>
+      </form>
+    </Toggle>
   );
 }

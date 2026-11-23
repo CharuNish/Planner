@@ -274,3 +274,70 @@ export async function loadTodos(): Promise<{ demo: boolean; items: Todo[] }> {
       .filter((x) => x.task && !x.done).map((x) => ({ task: x.task, priority: x.priority, added: x.added, row: x.row }))),
   };
 }
+
+// ───── Birthdays ─────
+// "Birthdays" tab in the Life sheet: Name | Birthday | Year Born | Note.
+// Why a sheet? Google keeps birthdays private to you: they don't show up for anyone you share your calendar with,
+// and that includes the planner's robot account. So the planner reads birthdays from here instead.
+// Birthday can be any date (only the day and month are used). Year Born is optional and is used to say "turns 27".
+export type Birthday = { name: string; month: number; day: number; year: number | null; note: string };
+export const BIRTHDAY_HEADERS = ["Name", "Birthday", "Year Born", "Note"];
+const MONTHS = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
+
+/** Reads a day + month (and a year if it's clearly a real birth year) from a sheet cell. */
+export function parseBirthday(v: unknown): { month: number; day: number; year: number | null } | null {
+  if (v === null || v === undefined || v === "") return null;
+  const thisYear = Number(todayISO().slice(0, 4));
+  const fromIso = (iso: string) => {
+    const [y, m, d] = iso.split("-").map(Number);
+    return m >= 1 && m <= 12 && d >= 1 && d <= 31 ? { month: m, day: d, year: y < thisYear - 1 ? y : null } : null;
+  };
+  if (typeof v === "number") return fromIso(parseDate(v) || "");
+  const s = String(v).trim().toLowerCase();
+  // "14 May", "14th of May", "May 14"
+  let m = s.match(/^(\d{1,2})(?:st|nd|rd|th)?\s*(?:of\s+)?([a-z]{3})[a-z]*\.?,?\s*(\d{4})?$/);
+  if (m && MONTHS.includes(m[2])) return { day: Number(m[1]), month: MONTHS.indexOf(m[2]) + 1, year: m[3] && Number(m[3]) < thisYear - 1 ? Number(m[3]) : null };
+  m = s.match(/^([a-z]{3})[a-z]*\.?\s+(\d{1,2})(?:st|nd|rd|th)?,?\s*(\d{4})?$/);
+  if (m && MONTHS.includes(m[1])) return { day: Number(m[2]), month: MONTHS.indexOf(m[1]) + 1, year: m[3] && Number(m[3]) < thisYear - 1 ? Number(m[3]) : null };
+  // "14/05" or "14-05" (day first, no year)
+  m = s.match(/^(\d{1,2})[-/.](\d{1,2})$/);
+  if (m && Number(m[2]) <= 12) return { day: Number(m[1]), month: Number(m[2]), year: null };
+  return fromIso(parseDate(v) || "");
+}
+
+export async function loadBirthdays(): Promise<{ demo: boolean; items: Birthday[] }> {
+  if (lifeIsDemo()) {
+    const t = todayISO();
+    const d = (o: number) => addDays(t, o);
+    return {
+      demo: true,
+      items: [["Amma", d(9), 1968], ["Nethmi", d(23), null], ["Kasun", d(61), 1999]].map(([name, iso, year]) => {
+        const [, m, dd] = String(iso).split("-").map(Number);
+        return { name: String(name), month: m, day: dd, year: year as number | null, note: "" };
+      }),
+    };
+  }
+  const rows = await tab("Birthdays");
+  return {
+    demo: false,
+    items: rows.map((r) => {
+      const b = parseBirthday(r["birthday"] ?? r["date"] ?? r["birth date"] ?? r["dob"]);
+      const born = num(r["year born"] ?? r["year"]);
+      return b ? { name: str(r["name"]), month: b.month, day: b.day, year: born > 1900 ? born : b.year, note: str(r["note"] ?? r["notes"]) } : null;
+    }).filter((b): b is Birthday => !!b && !!b.name),
+  };
+}
+
+/** The next time this birthday comes round (today counts), how many days away, and the age they turn (if we know the year). */
+export function nextBirthday(b: Birthday, today = todayISO()) {
+  let year = Number(today.slice(0, 4));
+  const iso = (y: number) => {
+    // 29 Feb birthdays are celebrated on 28 Feb in non-leap years.
+    const leap = (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0;
+    const day = b.month === 2 && b.day === 29 && !leap ? 28 : b.day;
+    return `${y}-${String(b.month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+  };
+  if (iso(year) < today) year++;
+  const date = iso(year);
+  return { date, days: daysBetween(today, date), turning: b.year ? year - b.year : null };
+}
