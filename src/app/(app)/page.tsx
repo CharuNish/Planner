@@ -116,7 +116,7 @@ export default async function Home() {
           {bills.length ? (
             <ul className="space-y-2">
               {bills.map((b) => (
-                <li key={b.name} className="flex justify-between text-sm gap-2">
+                <li key={b.key} className="flex justify-between text-sm gap-2">
                   <span>{b.name} <span className="muted text-xs">· {relativeDays(daysBetween(today, b.due))}</span></span>
                   <span className="tabular font-medium">{fmt(b.amount)}</span>
                 </li>

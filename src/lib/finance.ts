@@ -33,34 +33,76 @@ export async function loadFinance() {
   return { demo: false, txns, budgets, bills };
 }
 
-/** Rolls a bill's due date forward until it is today or later. */
-export function nextDueDate(bill: Bill, today = todayISO()) {
-  let d = bill.nextDue;
-  const f = bill.frequency.toLowerCase();
-  const step = (iso: string) => {
-    const dt = new Date(iso + "T00:00:00Z");
-    if (f.startsWith("week")) dt.setUTCDate(dt.getUTCDate() + 7);
-    else if (f.startsWith("quart")) dt.setUTCMonth(dt.getUTCMonth() + 3);
-    else if (f.startsWith("year") || f.startsWith("annual")) dt.setUTCFullYear(dt.getUTCFullYear() + 1);
-    else if (f.startsWith("once")) return null;
-    else dt.setUTCMonth(dt.getUTCMonth() + 1);
-    return dt.toISOString().slice(0, 10);
-  };
-  let guard = 0;
-  while (d < today && guard++ < 500) {
-    const n = step(d);
-    if (!n) return d;
-    d = n;
-  }
-  return d;
+/**
+ * How often a bill repeats, read from the Frequency column.
+ * Understands: Weekly, Fortnightly / Every 2 weeks, Monthly, Every 2 months, Quarterly,
+ * Every 6 months / Half-yearly, Yearly / Annual, Once. Anything else counts as Monthly.
+ */
+export type BillRule = { unit: "day" | "month" | "once"; every: number };
+export function billRule(frequency: string): BillRule {
+  const f = frequency.toLowerCase().trim();
+  const n = Number(f.match(/(\d+)/)?.[1] || 0);
+  if (!f) return { unit: "month", every: 1 };
+  if (/once|one.?time|one.?off/.test(f)) return { unit: "once", every: 0 };
+  if (/daily|every ?day/.test(f)) return { unit: "day", every: 1 };
+  if (/fortnight|bi.?week/.test(f)) return { unit: "day", every: 14 };
+  if (/week/.test(f)) return { unit: "day", every: 7 * (n || 1) };
+  if (/day/.test(f) && n) return { unit: "day", every: n };
+  if (/quarter/.test(f)) return { unit: "month", every: 3 };
+  if (/half|semi/.test(f)) return { unit: "month", every: 6 };
+  if (/bi.?month/.test(f)) return { unit: "month", every: 2 };
+  if (/year|annual/.test(f)) return { unit: "month", every: 12 * (n || 1) };
+  if (/month/.test(f)) return { unit: "month", every: n || 1 };
+  return { unit: "month", every: 1 };
 }
 
+/** Adds whole months, keeping the same day of the month (31st becomes the last day in shorter months). */
+function addMonthsKeepDay(iso: string, months: number) {
+  const [y, m, d] = iso.split("-").map(Number);
+  const total = y * 12 + (m - 1) + months;
+  const ny = Math.floor(total / 12), nm = total % 12;
+  const last = new Date(Date.UTC(ny, nm + 1, 0)).getUTCDate();
+  return `${ny}-${String(nm + 1).padStart(2, "0")}-${String(Math.min(d, last)).padStart(2, "0")}`;
+}
+
+/** The k-th due date of a bill (k = 0 is the Next Due date in your sheet). */
+function occurrence(start: string, rule: BillRule, k: number) {
+  if (rule.unit === "day") return addDays(start, k * rule.every);
+  if (rule.unit === "month") return addMonthsKeepDay(start, k * rule.every);
+  return start;
+}
+
+/** Every due date of a bill between two dates (inclusive), rolling forward from Next Due by its Frequency. */
+export function billDueDates(bill: Bill, from: string, to: string) {
+  const rule = billRule(bill.frequency);
+  if (rule.unit === "once") return bill.nextDue >= from && bill.nextDue <= to ? [bill.nextDue] : [];
+  let k = 0;
+  if (bill.nextDue < from) {
+    // Jump close to "from" instead of stepping one by one through old dates.
+    const gap = rule.unit === "day" ? daysBetween(bill.nextDue, from) / rule.every : daysBetween(bill.nextDue, from) / 31 / rule.every;
+    k = Math.max(0, Math.floor(gap) - 1);
+  }
+  const out: string[] = [];
+  for (let guard = 0; guard < 1000; guard++, k++) {
+    const d = occurrence(bill.nextDue, rule, k);
+    if (d > to) break;
+    if (d >= from) out.push(d);
+  }
+  return out;
+}
+
+/** The next time a bill is due, today or later (rolls forward automatically, no sheet edits needed). */
+export function nextDueDate(bill: Bill, today = todayISO()) {
+  return billDueDates(bill, today, addDays(today, 3700))[0] || bill.nextDue;
+}
+
+/** Every bill payment due in the next `days` days. A weekly bill shows once per week, a monthly one once per month, and so on. */
 export function upcomingBills(bills: Bill[], days = 30) {
   const today = todayISO();
+  const end = addDays(today, days);
   return bills
-    .map((b) => ({ ...b, due: nextDueDate(b, today) }))
-    .filter((b) => b.due >= today && daysBetween(today, b.due) <= days)
-    .sort((a, b) => a.due.localeCompare(b.due));
+    .flatMap((b) => billDueDates(b, today, end).map((due) => ({ ...b, due, key: `${b.name}|${due}` })))
+    .sort((a, b) => a.due.localeCompare(b.due) || a.name.localeCompare(b.name));
 }
 
 const sum = (xs: number[]) => xs.reduce((a, b) => a + b, 0);

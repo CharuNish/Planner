@@ -31,6 +31,7 @@ async function gfetch(url: string, init: RequestInit = {}) {
     if (body.includes("Unable to parse range")) throw new Error("A tab is missing or misnamed. Check the tab names match the template exactly (e.g. Transactions, Budgets, Bills).");
     throw new Error(`Google API ${res.status}: ${body.slice(0, 300)}`);
   }
+  if (res.status === 204) return {};
   return res.json();
 }
 
@@ -135,6 +136,7 @@ export async function ensureTab(sheetId: string, tab: string, headers: string[],
 export type GEvent = {
   id: string; summary?: string; description?: string; location?: string; colorId?: string;
   start: { date?: string; dateTime?: string }; end: { date?: string; dateTime?: string };
+  status?: string; extendedProperties?: { private?: Record<string, string> };
 };
 
 export async function listEvents(calendarId: string, timeMin: string, timeMax: string): Promise<GEvent[]> {
@@ -147,6 +149,31 @@ export async function insertEvent(calendarId: string, event: object) {
   return gfetch(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events`, {
     method: "POST", body: JSON.stringify(event),
   });
+}
+
+/** Lists (non-expanded) events that carry a private tag, including ones you deleted. */
+export async function listTaggedEvents(calendarId: string, tag: string): Promise<GEvent[]> {
+  const out: GEvent[] = [];
+  let pageToken = "";
+  for (let i = 0; i < 10; i++) {
+    const q = new URLSearchParams({ privateExtendedProperty: `${tag}=1`, showDeleted: "true", maxResults: "250" });
+    if (pageToken) q.set("pageToken", pageToken);
+    const data = await gfetch(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events?${q}`);
+    out.push(...(data.items || []));
+    pageToken = data.nextPageToken || "";
+    if (!pageToken) break;
+  }
+  return out;
+}
+
+export async function updateEvent(calendarId: string, eventId: string, event: object) {
+  return gfetch(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events/${encodeURIComponent(eventId)}`, {
+    method: "PUT", body: JSON.stringify(event),
+  });
+}
+
+export async function deleteEvent(calendarId: string, eventId: string) {
+  return gfetch(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events/${encodeURIComponent(eventId)}`, { method: "DELETE" });
 }
 
 export const num = (v: unknown) => {

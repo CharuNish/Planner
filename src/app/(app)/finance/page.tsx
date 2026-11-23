@@ -1,7 +1,9 @@
 import { IncomeExpenseChart, SpendPaceChart } from "@/components/charts";
-import { AddTransactionForm } from "@/components/forms";
+import { AddTransactionForm, SyncBillsButton } from "@/components/forms";
+import { after } from "next/server";
+import { syncBillsToCalendar } from "@/lib/billsync";
 import { DemoBanner, Empty, PageHeader, ProgressBar, Section, Stat } from "@/components/ui";
-import { config } from "@/lib/config";
+import { calendarIsDemo, config } from "@/lib/config";
 import { daysBetween, prettyDate, relativeDays, todayISO } from "@/lib/dates";
 import { analyseFinance, fmt, loadFinance, upcomingBills } from "@/lib/finance";
 import { InvestmentsSection } from "@/components/investments";
@@ -19,6 +21,8 @@ export default async function FinancePage() {
   }
   const a = analyseFinance(data.txns, data.budgets);
   const bills = upcomingBills(data.bills, 30);
+  // After the page is sent, quietly make sure every bill is in your Google Calendar (cheap when nothing changed).
+  if (!data.demo && !calendarIsDemo()) after(() => syncBillsToCalendar().catch(() => null));
   const today = todayISO();
   const monthName = prettyDate(a.month + "-01", { month: "long", year: "numeric" });
   const cats = [...new Set(data.txns.map((t) => t.category))];
@@ -90,11 +94,11 @@ export default async function FinancePage() {
       </div>
 
       <div className="grid lg:grid-cols-2 gap-5">
-        <Section title="Bills & subscriptions (next 30 days)">
+        <Section title="Bills & subscriptions (next 30 days)" action={!data.demo && !calendarIsDemo() ? <SyncBillsButton /> : undefined}>
           {bills.length ? (
             <ul className="space-y-2">
               {bills.map((b) => (
-                <li key={b.name} className="flex justify-between text-sm gap-2">
+                <li key={b.key} className="flex justify-between text-sm gap-2">
                   <span>{b.name} <span className="chip soft ml-1">{b.type}</span></span>
                   <span className="text-right"><span className="tabular font-medium">{fmt(b.amount)}</span><span className="block text-xs muted">{prettyDate(b.due)} · {relativeDays(daysBetween(today, b.due))}</span></span>
                 </li>

@@ -271,3 +271,14 @@ export async function logSteps(_: Result, f: FormData): Promise<Result> {
     return { ok: `${steps.toLocaleString("en-US")} steps saved 👟` };
   } catch (e) { return { error: String(e) }; }
 }
+
+export async function syncBills(_: Result): Promise<Result> {
+  try {
+    const { syncBillsToCalendar } = await import("@/lib/billsync");
+    const r = await syncBillsToCalendar();
+    if (r.error) return { error: r.error };
+    revalidatePath("/", "layout");
+    const parts = [r.added && `${r.added} added`, r.updated && `${r.updated} updated`, r.removed && `${r.removed} removed`].filter(Boolean);
+    return { ok: parts.length ? `Calendar updated ✓ (${parts.join(", ")})` : "Your calendar already has all your bills ✓" };
+  } catch (e) { return { error: String(e).slice(0, 300) }; }
+}
