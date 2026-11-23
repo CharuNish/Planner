@@ -1,6 +1,6 @@
 "use client";
 import { useActionState, useState } from "react";
-import { addEvent, addTransaction, logStudy } from "@/app/(app)/actions";
+import { addEvent, addTransaction, logStudy, syncBills } from "@/app/(app)/actions";
 
 const today = () => new Date().toLocaleDateString("en-CA");
 
@@ -67,5 +67,16 @@ export function AddEventForm({ categories }: { categories: readonly string[] }) 
         <div className="col-span-full"><Msg s={s} /></div>
       </form>
     </Toggle>
+  );
+}
+
+/** Puts every bill from your Bills sheet into Google Calendar right now (it also happens daily on its own). */
+export function SyncBillsButton() {
+  const [s, action, pending] = useActionState(syncBills, null);
+  return (
+    <form action={action} className="flex flex-col items-end gap-1">
+      <button disabled={pending} className="text-xs text-accent">{pending ? "Adding to calendar…" : "📅 Add to my calendar now"}</button>
+      {s && <span className={`text-xs ${s.error ? "text-bad" : "text-good"}`}>{s.error || s.ok}</span>}
+    </form>
   );
 }

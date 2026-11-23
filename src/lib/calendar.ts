@@ -58,6 +58,8 @@ export async function loadEvents(days = 45, pastDays = 0): Promise<{ demo: boole
     try {
       const items = await listEvents(cid, timeMin, timeMax);
       for (const e of items) {
+        // Bills the planner put in your calendar are already shown from the Bills sheet, so skip them here.
+        if (e.extendedProperties?.private?.plannerBill) continue;
         const title = e.summary || "(no title)";
         const dt = e.start.dateTime ? new Date(e.start.dateTime) : null;
         const et = e.end?.dateTime ? new Date(e.end.dateTime) : null;

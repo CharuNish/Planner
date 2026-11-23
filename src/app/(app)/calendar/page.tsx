@@ -18,7 +18,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
   ]);
   // Bills (from your finance sheet) and exams/submissions (from your studies sheet) appear here too.
   const extra: CalEvent[] = [
-    ...(fin ? upcomingBills(fin.bills, 45).map((b) => ({ id: "bill-" + b.name, date: b.due, time: null, endTime: null, title: `${b.name} due`, category: b.type === "Subscription" ? "Subscription" : "Bill", location: "", source: "sheet" })) : []),
+    ...(fin ? upcomingBills(fin.bills, 45).map((b) => ({ id: "bill-" + b.key, date: b.due, time: null, endTime: null, title: `${b.name} due`, category: b.type === "Subscription" ? "Subscription" : "Bill", location: "", source: "sheet" })) : []),
     ...(stu ? stu.deadlines.filter((d) => d.due >= today && daysBetween(today, d.due) <= 45).map((d) => ({ id: "dl-" + d.title, date: d.due, time: null, endTime: null, title: d.title, category: d.type.toLowerCase().startsWith("exam") ? "Exam" : "Deadline", location: d.notes, source: "sheet" })) : []),
   ];
   const seen = new Set(cal.events.map((e) => `${e.date}|${e.title.toLowerCase()}`));

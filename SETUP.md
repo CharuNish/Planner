@@ -30,7 +30,7 @@ For each one:
 |---|---|---|
 | **Transactions** | Date · Type · Category · Amount · Description · Method | One row per income or expense. Type is `Income` or `Expense`. Amounts are positive numbers. |
 | **Budgets** | Category · Monthly Budget | One row per spending category. Use the same category names as in Transactions. |
-| **Bills** | Name · Amount · Type · Frequency · Next Due · Category | Type: `Bill` / `Subscription` / `Payment`. Frequency: `Weekly`, `Monthly`, `Quarterly`, `Yearly` or `Once`. You only need to set the first due date; the planner works out the next ones. |
+| **Bills** | Name · Amount · Type · Frequency · Next Due · Category | Type: `Bill` / `Subscription` / `Payment`. Frequency: `Weekly`, `Monthly`, `Quarterly`, `Yearly` or `Once` (you can also type `Every 2 weeks`, `Every 2 months`, `Every 6 months`). You only need to set the first due date; the planner works out the next ones and also adds them to your Google Calendar. See step 15. |
 | **Investments** | Name · Type · Institution · Amount · Rate % · Start Date · Term (Months) · Maturity Date · Interest Payout · Auto Renew · Current Value · Status · Notes | FDs, planned FDs, T-bills, unit trusts, shares, gold, savings. Created for you automatically. See step 13. |
 
 ### Studies sheet tabs
@@ -272,6 +272,16 @@ Interest is worked out simply (amount × rate × days ÷ 365), before tax, so it
 - Evening and night messages don't use Gemini, so your free Gemini quota is still only used once a day (morning).
 - Nothing is sent twice: every message is listed in a **BotLog** tab in your Life sheet (created by itself the first time).
 - Want different times? Just ask Claude. (They live in `src/lib/bot.ts` and `vercel.json`.)
+
+## 15. Recurring bills in your Google Calendar
+
+Every bill in the **Bills** tab is added to your Google Calendar as an all-day, repeating event (yellow, with a reminder at 9:00 AM the day before). A monthly bill repeats every month, a weekly one every week, and so on. On the website it also shows in every upcoming list (Finance, Home and Calendar) each time it is due, so you never have to change **Next Due** by hand.
+
+- **When it happens:** every morning at 6:00 AM, and a few seconds after you open the Finance page. To do it right away, click **📅 Add to my calendar now** on the Finance page, next to "Bills & subscriptions".
+- **Change a bill:** edit the row in the sheet (amount, date, frequency). The calendar event updates by itself. Don't edit the bill in Google Calendar, because the sheet wins.
+- **Stop a bill:** delete its row in the sheet. Its calendar event is removed too. Only events the planner made are ever removed.
+- **Your sheet is never changed.** The planner only reads it.
+- **If you see "no access (403)":** the robot can only read your calendar. Open [Google Calendar](https://calendar.google.com) → ⚙️ **Settings** → click your calendar on the left → **Shared with** → next to the robot's email pick **Make changes to events**.
 
 ## Running it on your laptop (optional, for tinkering)
 

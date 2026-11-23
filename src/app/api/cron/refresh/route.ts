@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { config } from "@/lib/config";
 import { todayISO } from "@/lib/dates";
 import { settle } from "@/lib/fetchx";
+import { syncBillsToCalendar } from "@/lib/billsync";
 import { getRecipes, isoWeek } from "@/lib/recipes";
 import { getMedium, getPapers, getTrending, getVideos } from "@/lib/updates";
 
@@ -18,6 +19,9 @@ export async function GET(req: Request) {
     ["github", getTrending], ["papers", getPapers], ["medium", getMedium], ["youtube", getVideos], ["recipes", () => getRecipes(isoWeek(todayISO()))],
   ];
   const out: Record<string, string> = {};
+  // Keep your recurring bills in Google Calendar in step with the Bills sheet.
+  const bills = await settle(syncBillsToCalendar());
+  out.bills = bills.ok ? JSON.stringify(bills.data) : bills.error;
   for (const [name, run] of jobs) {
     const r = await settle(run());
     out[name] = r.ok ? "ok" : r.error;
