@@ -1,21 +1,24 @@
 import { EventRow } from "@/components/event-list";
-import { AddEventForm } from "@/components/forms";
+import { AddBirthdayForm, AddEventForm } from "@/components/forms";
 import { DemoBanner, Empty, PageHeader, Section } from "@/components/ui";
 import { CATEGORIES, CATEGORY_DOT, CATEGORY_STYLE, loadEvents, type CalEvent } from "@/lib/calendar";
 import { addDays, prettyDate, relativeDays, daysBetween, todayISO } from "@/lib/dates";
 import { loadFinance, upcomingBills } from "@/lib/finance";
 import { loadStudies } from "@/lib/studies";
+import { loadBirthdays, nextBirthday } from "@/lib/life";
 
 export const dynamic = "force-dynamic";
 
 export default async function CalendarPage({ searchParams }: { searchParams: Promise<{ show?: string }> }) {
   const { show } = await searchParams;
   const today = todayISO();
-  const [cal, fin, stu] = await Promise.all([
+  const [cal, fin, stu, bdays] = await Promise.all([
     loadEvents(45),
     loadFinance().catch(() => null),
     loadStudies().catch(() => null),
+    loadBirthdays().catch(() => ({ demo: false, items: [] })),
   ]);
+  const birthdays = bdays.items.map((b) => ({ ...b, next: nextBirthday(b, today) })).sort((a, b) => a.next.days - b.next.days);
   // Bills (from your finance sheet) and exams/submissions (from your studies sheet) appear here too.
   const extra: CalEvent[] = [
     ...(fin ? upcomingBills(fin.bills, 45).map((b) => ({ id: "bill-" + b.key, date: b.due, time: null, endTime: null, title: `${b.name} due`, category: b.type === "Subscription" ? "Subscription" : "Bill", location: "", source: "sheet" })) : []),
@@ -81,6 +84,26 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
             ))}
           </div>
         )}
+      </Section>
+      <Section title="🎂 Birthdays">
+        <div className="mb-3"><AddBirthdayForm /></div>
+        {birthdays.length === 0 ? (
+          <Empty>No birthdays yet. Add them here (they go to the &quot;Birthdays&quot; tab of your Life sheet).</Empty>
+        ) : (
+          <ul className="divide-y" style={{ borderColor: "var(--border)" }}>
+            {birthdays.map((b) => (
+              <li key={b.name + b.next.date} className="flex items-center gap-3 py-2">
+                <div className="text-xl">{b.next.days === 0 ? "🥳" : "🎂"}</div>
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm font-medium truncate">{b.name}{b.next.turning ? <span className="muted font-normal"> · turns {b.next.turning}</span> : null}</div>
+                  <div className="text-xs muted truncate">{prettyDate(b.next.date, { day: "numeric", month: "long" })}{b.note ? ` · ${b.note}` : ""}</div>
+                </div>
+                <span className={`chip shrink-0 ${b.next.days <= 7 ? CATEGORY_STYLE.Birthday : "muted"}`}>{b.next.days === 0 ? "Today!" : relativeDays(b.next.days)}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+        <p className="text-xs muted mt-2">Why not straight from Google Calendar? Google keeps birthdays private to you, so the planner&apos;s robot account can&apos;t see them even though your calendar is shared with it.</p>
       </Section>
       <p className="text-xs muted">Tip: in Google Calendar, start a title with a tag like <code>[Gym]</code>, <code>[Exam]</code> or <code>[Bill]</code> to set its colour here.</p>
     </div>

@@ -136,7 +136,7 @@ export async function ensureTab(sheetId: string, tab: string, headers: string[],
 export type GEvent = {
   id: string; summary?: string; description?: string; location?: string; colorId?: string;
   start: { date?: string; dateTime?: string }; end: { date?: string; dateTime?: string };
-  status?: string; extendedProperties?: { private?: Record<string, string> };
+  status?: string; eventType?: string; extendedProperties?: { private?: Record<string, string> };
 };
 
 export async function listEvents(calendarId: string, timeMin: string, timeMax: string): Promise<GEvent[]> {
