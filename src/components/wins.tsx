@@ -6,7 +6,7 @@ const today = () => new Date().toLocaleDateString("en-CA");
 const CATS = [["Fitness", "🏃‍♀️"], ["Mind", "🧘‍♀️"], ["Kindness", "💝"], ["Learning", "🧠"], ["Career", "💼"], ["Fun", "🎉"], ["Self-care", "🛁"], ["Other", "✨"]] as const;
 
 /** Shrinks a phone photo (often 5-10 MB) to a ~1600px JPEG so it uploads fast and stays small. */
-async function shrink(file: File): Promise<File> {
+export async function shrink(file: File): Promise<File> {
   if (!file.type.startsWith("image/") || file.size < 600_000) return file;
   try {
     const bmp = await createImageBitmap(file);
