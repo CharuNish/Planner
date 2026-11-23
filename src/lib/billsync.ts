@@ -18,6 +18,12 @@ const eventId = (b: Bill) => "pbill" + hash(b.name.trim().toLowerCase()).slice(0
 function rrule(b: Bill): string[] {
   const r = billRule(b.frequency);
   if (r.unit === "once") return [];
+  // End Date set? The repeating event stops on that day.
+  const until = b.endDate ? `;UNTIL=${b.endDate.replace(/-/g, "")}` : "";
+  return rruleBase(b, r).map((x) => x + until);
+}
+
+function rruleBase(b: Bill, r: ReturnType<typeof billRule>): string[] {
   if (r.unit === "day") return [r.every % 7 === 0 ? `RRULE:FREQ=WEEKLY;INTERVAL=${r.every / 7}` : `RRULE:FREQ=DAILY;INTERVAL=${r.every}`];
   const day = Number(b.nextDue.slice(8, 10));
   const base = r.every % 12 === 0 ? `RRULE:FREQ=YEARLY;INTERVAL=${r.every / 12}` : `RRULE:FREQ=MONTHLY;INTERVAL=${r.every}`;
@@ -33,7 +39,7 @@ function eventFor(b: Bill) {
   const kind = b.type === "Subscription" ? "Subscription" : b.type === "Payment" ? "Payment" : "Bill";
   const body = {
     summary: `🧾 ${b.name} · ${fmt(b.amount)}`,
-    description: `${kind}${b.category ? ` · ${b.category}` : ""} · ${b.frequency || "Monthly"}\n\nAdded by your planner from the Bills tab of your Finance sheet. To change or remove it, edit the sheet (changes here get overwritten).`,
+    description: `${kind}${b.category ? ` · ${b.category}` : ""} · ${b.frequency || "Monthly"}${b.endDate ? ` until ${b.endDate}` : ""}\n\nAdded by your planner from the Bills tab of your Finance sheet. To change or remove it, edit the sheet (changes here get overwritten).`,
     start: { date: b.nextDue },
     end: { date: addDays(b.nextDue, 1) },
     recurrence: rrule(b),
@@ -56,6 +62,7 @@ export async function syncBillsToCalendar(): Promise<BillSyncResult> {
   const wanted = new Set<string>();
 
   for (const b of bills) {
+    if (b.endDate && b.endDate < b.nextDue) continue; // ended before it started: leave it out (its old event gets removed below)
     const id = eventId(b);
     if (wanted.has(id)) continue; // two rows with the same name: the first one wins
     wanted.add(id);

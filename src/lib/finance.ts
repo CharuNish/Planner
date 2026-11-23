@@ -5,11 +5,11 @@ import { num, readSheet, str } from "./google";
 
 export type Txn = { date: string; type: "Income" | "Expense"; category: string; amount: number; description: string; method: string };
 export type Budget = { category: string; budget: number };
-export type Bill = { name: string; amount: number; type: string; frequency: string; nextDue: string; category: string };
+export type Bill = { name: string; amount: number; type: string; frequency: string; nextDue: string; category: string; endDate?: string };
 
 export async function loadFinance() {
   if (financeIsDemo()) {
-    return { demo: true, txns: demoTransactions() as unknown as Txn[], budgets: demoBudgets, bills: demoBills() };
+    return { demo: true, txns: demoTransactions() as unknown as Txn[], budgets: demoBudgets, bills: demoBills() as Bill[] };
   }
   const id = config.google.financeSheetId;
   const [t, b, bl] = await Promise.all([
@@ -29,6 +29,8 @@ export async function loadFinance() {
   const bills: Bill[] = bl.map((r) => ({
     name: str(r["name"]), amount: num(r["amount"]), type: str(r["type"]) || "Bill", frequency: str(r["frequency"]) || "Monthly",
     nextDue: parseDate(r["next due"]) || "", category: str(r["category"]),
+    // Optional "End Date" column: the bill stops after this date (blank = keeps going forever).
+    endDate: parseDate(r["end date"] ?? r["ends"] ?? r["end"] ?? r["until"]) || undefined,
   })).filter((x) => x.name && x.nextDue);
   return { demo: false, txns, budgets, bills };
 }
@@ -75,6 +77,8 @@ function occurrence(start: string, rule: BillRule, k: number) {
 /** Every due date of a bill between two dates (inclusive), rolling forward from Next Due by its Frequency. */
 export function billDueDates(bill: Bill, from: string, to: string) {
   const rule = billRule(bill.frequency);
+  if (bill.endDate && bill.endDate < to) to = bill.endDate;
+  if (to < from) return [];
   if (rule.unit === "once") return bill.nextDue >= from && bill.nextDue <= to ? [bill.nextDue] : [];
   let k = 0;
   if (bill.nextDue < from) {
@@ -92,8 +96,8 @@ export function billDueDates(bill: Bill, from: string, to: string) {
 }
 
 /** The next time a bill is due, today or later (rolls forward automatically, no sheet edits needed). */
-export function nextDueDate(bill: Bill, today = todayISO()) {
-  return billDueDates(bill, today, addDays(today, 3700))[0] || bill.nextDue;
+export function nextDueDate(bill: Bill, today = todayISO()): string | null {
+  return billDueDates(bill, today, addDays(today, 3700))[0] || null;
 }
 
 /** Every bill payment due in the next `days` days. A weekly bill shows once per week, a monthly one once per month, and so on. */
