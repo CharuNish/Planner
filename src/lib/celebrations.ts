@@ -49,13 +49,13 @@ export function savingsWin(trend: { month: string; saved: number }[], month: str
   ]) }];
 }
 
-/** Mini goals: any goal marked done / achieved / complete. */
+/** Milestones (the /goals page): any goal marked done / achieved / complete. */
 export function goalWins(goals: { goal: string; status: string; category: string }[]): Achievement[] {
   return goals.filter((g) => /done|achiev|complete/i.test(g.status)).map((g) => {
     const id = `goal:${slug(g.goal)}`;
     return { id, text: line(id, [
       `“${g.goal}” ACHIEVED 🏆 Manifested it, then actually did it. Iconic.`,
-      `Mini goal “${g.goal}” ✔️ Told you so. Next one's already scared of you 🎈`,
+      `Milestone “${g.goal}” ✔️ Told you so. Next one's already scared of you 🎈`,
       `Hurray! “${g.goal}” is officially done. Screenshot this, frame it, brag about it ✨`,
     ]) };
   });

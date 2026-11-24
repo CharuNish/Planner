@@ -36,7 +36,7 @@ export const CURSORS: Record<CursorKey, { svg: string; hot: [number, number] }> 
     `<path d="M6 13C6 6 10.5 3 16 3s10 3 10 10c-2 1.5-4 .5-5 0-1.5 1.5-3.5 1.5-5 0-1.5 1.5-3.5 1.5-5 0-1 .5-3 1.5-5 0z" fill="#c4b5fd" fill-opacity=".9" stroke="#7c3aed" stroke-width="1.2"/>` +
     `<path d="M10 14c-1 4 1 7 0 12M14 15c1 4-1 8 0 13M18 15c-1 4 1 8 0 13M22 14c1 4-1 7 0 12" stroke="#a78bfa" stroke-width="1.4" fill="none" stroke-linecap="round"/>` +
     `<ellipse cx="13" cy="8" rx="3" ry="2" fill="#fff" opacity=".7"/>`) },
-  // Body & Health: a lilac butterfly from the wisteria garden
+  // Glow Up: a lilac butterfly from the wisteria garden
   wisteria: { hot: [16, 16], svg: wrap(
     `<path d="M15.5 15C12 7 5 3 3.5 6.5S6 15 15.5 16z" fill="#c4b5fd" stroke="#6d28d9" stroke-width="1.1"/>` +
     `<path d="M16.5 15C20 7 27 3 28.5 6.5S26 15 16.5 16z" fill="#c4b5fd" stroke="#6d28d9" stroke-width="1.1"/>` +
@@ -50,7 +50,7 @@ export const CURSORS: Record<CursorKey, { svg: string; hot: [number, number] }> 
     `<ellipse cx="11" cy="10" rx="5" ry="3" fill="#e0f2fe" fill-opacity=".85" stroke="#334155" stroke-width=".8" transform="rotate(-30 11 10)"/>` +
     `<ellipse cx="21" cy="10" rx="5" ry="3" fill="#e0f2fe" fill-opacity=".85" stroke="#334155" stroke-width=".8" transform="rotate(30 21 10)"/>` +
     `<ellipse cx="16" cy="13" rx="2.6" ry="4.5" fill="#1f2937"/>`) },
-  // Mini goals: a paper plane, its nose is the click point
+  // Milestones: a paper plane, its nose is the click point
   plane: { hot: [3, 3], svg: wrap(
     `<path d="M3 3l26 9-11 3-3 11z" fill="#fff" stroke="#334155" stroke-width="1.3" stroke-linejoin="round"/>` +
     `<path d="M3 3l15 12" stroke="#94a3b8" stroke-width="1.2"/><path d="M18 15l-3 11 0-8z" fill="#cbd5e1"/>`) },

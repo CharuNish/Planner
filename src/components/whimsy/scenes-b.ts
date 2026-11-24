@@ -1,4 +1,4 @@
-/* Cherry blossoms (Calendar), Dandelions (Body & Health), Paper planes (Mini goals),
+/* Cherry blossoms (Calendar), Dandelions (unused), Paper planes (Milestones),
  * Shooting stars (Wins), Jellyfish (Updates). */
 import { cloudLayer, glow, pick, rand, sway, TAU, vgrad, type SceneMaker } from "./engine";
 
