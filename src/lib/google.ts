@@ -182,3 +182,11 @@ export const num = (v: unknown) => {
   return isNaN(n) ? 0 : n;
 };
 export const str = (v: unknown) => String(v ?? "").trim();
+
+/** Overwrites a whole tab with headers + rows, creating the tab first if it doesn't exist yet. */
+export async function replaceTab(sheetId: string, tab: string, headers: string[], rows: unknown[][]) {
+  await gfetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}:batchUpdate`, { method: "POST", body: JSON.stringify({ requests: [{ addSheet: { properties: { title: tab, gridProperties: { frozenRowCount: 1 } } } }] }) })
+    .catch((e) => { if (!/already exists/i.test(String(e))) throw e; });
+  await gfetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent(tab)}:clear`, { method: "POST", body: "{}" });
+  await gfetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent(tab + "!A1")}?valueInputOption=RAW`, { method: "PUT", body: JSON.stringify({ values: [headers, ...rows] }) });
+}

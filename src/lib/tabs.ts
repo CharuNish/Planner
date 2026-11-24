@@ -7,6 +7,6 @@ export const TABS: { href: string; label: string; icon: string; soon?: boolean }
   { href: "/weight", label: "Glow Up", icon: "💪" },
   { href: "/habits", label: "Habits", icon: "✅" },
   { href: "/goals", label: "Milestones", icon: "🎯" },
-  { href: "/wins", label: "Wins", icon: "🏆" },
+  { href: "/memories", label: "Memories", icon: "📸" },
   { href: "/content", label: "Content", icon: "🎬" },
 ];

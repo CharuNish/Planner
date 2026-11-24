@@ -3,7 +3,7 @@ import { useActionState, useRef, useState, useTransition } from "react";
 import { addWin, sendMorningNow } from "@/app/(app)/actions";
 
 const today = () => new Date().toLocaleDateString("en-CA");
-const CATS = [["Fitness", "🏃‍♀️"], ["Mind", "🧘‍♀️"], ["Kindness", "💝"], ["Learning", "🧠"], ["Career", "💼"], ["Fun", "🎉"], ["Self-care", "🛁"], ["Other", "✨"]] as const;
+const CATS = [["Fitness", "🏃‍♀️"], ["Mind", "🧘‍♀️"], ["Kindness", "💝"], ["Learning", "🧠"], ["Career", "💼"], ["Fun", "🎉"], ["Self-care", "🛁"], ["Love", "💗"], ["Travel", "✈️"], ["Tough day", "🌧️"], ["Lesson", "🌱"], ["Other", "✨"]] as const;
 
 /** Shrinks a phone photo (often 5-10 MB) to a ~1600px JPEG so it uploads fast and stays small. */
 export async function shrink(file: File): Promise<File> {
@@ -35,7 +35,7 @@ export function WinForm({ compact = false }: { compact?: boolean }) {
   return (
     <form ref={formRef} action={submit} className="space-y-3"
       onSubmit={() => setTimeout(() => { if (formRef.current) { formRef.current.reset(); fileRef.current = null; setPreview(null); } }, 50)}>
-      <textarea name="text" required rows={compact ? 2 : 3} placeholder="I walked 10k steps 👟 · I nailed a yoga headstand 🤸‍♀️ · I volunteered 💝…" className="input w-full resize-none" />
+      <textarea name="text" required rows={compact ? 2 : 3} placeholder="Walked 10k steps 👟 · Sunset with the girls 🌅 · Rough day, cried, still showed up 🌧️…" className="input w-full resize-none" />
       <div className="flex flex-wrap gap-1.5">
         {CATS.map(([k, icon]) => (
           <button type="button" key={k} onClick={() => setCat(k)} className={`chip text-xs ${cat === k ? "ring-2 ring-[var(--accent)]" : "soft"}`}>{icon} {k}</button>
@@ -55,7 +55,7 @@ export function WinForm({ compact = false }: { compact?: boolean }) {
           <img src={preview} alt="" className="h-12 w-12 rounded-lg object-cover" />
         )}
         <input name="date" type="date" defaultValue={today()} className="input" />
-        <button disabled={pending || busy} className="btn ml-auto">{pending ? "Saving…" : busy ? "Shrinking photo…" : "Save my win ✨"}</button>
+        <button disabled={pending || busy} className="btn ml-auto">{pending ? "Saving…" : busy ? "Shrinking photo…" : "Save this memory 📸"}</button>
       </div>
       {s && <p className={`text-sm ${s.error ? "text-bad" : "text-good"}`}>{s.error || s.ok}</p>}
     </form>

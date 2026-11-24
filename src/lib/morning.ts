@@ -9,7 +9,7 @@ import { fmt, loadFinance, upcomingBills } from "./finance";
 import { investmentTodos, loadInvestments } from "./investments";
 import { geminiJSON, hasGemini } from "./gemini";
 import { dailyShuffle } from "./hype";
-import { analyseHabits, analyseMeasurements, analyseWeight, loadHabits, loadWins, loadMeasurements, loadWeight, MEASURE_LABEL, MEASURES } from "./life";
+import { analyseHabits, analyseMeasurements, analyseWeight, loadHabits, isWin, loadWins, loadMeasurements, loadWeight, MEASURE_LABEL, MEASURES } from "./life";
 import { studyNudges } from "./nudges";
 import { analyseStudies, loadStudies, targetFor } from "./studies";
 import { analyseContent, loadContent } from "./content";
@@ -114,7 +114,7 @@ export async function gatherMorningFacts(): Promise<MorningFacts> {
     const d = a.yesterday;
     if (d) rec.watch = { steps: d.steps, stepGoal: config.stepGoal, workoutMin: Math.round(d.workouts.reduce((x, w) => x + w.minutes, 0)), km: d.distanceKm, activeKcal: d.activeKcal, exerciseMin: d.exerciseMin, workouts: d.workouts.map((w) => `${w.type} ${Math.round(w.minutes)} min`), restingHr: d.restingHr, avgHr: d.avgHr, maxHr: d.maxHr, avgSteps7: a.avgSteps7 ? Math.round(a.avgSteps7) : null };
   }
-  if (hl) rec.highlights = hl.items.filter((h) => h.date === y).map((h) => (h.photo ? `${h.text} (with a photo 📸)` : h.text));
+  if (hl) rec.highlights = hl.items.filter((h) => h.date === y && isWin(h)).map((h) => (h.photo ? `${h.text} (with a photo 📸)` : h.text));
   if (con) {
     rec.posts = con.uploads.filter((u) => u.date === y).map((u) => `${u.channel}: "${u.title || u.type}" on ${u.platforms.join(", ")}`);
     rec.collabs = con.collabs.filter((c) => c.date === y).map((c) => `${c.brand} (${c.status}${c.price ? `, ${fmt(c.price)}` : ""})`);
@@ -207,7 +207,7 @@ async function aiVoice(f: MorningFacts): Promise<Voice> {
 Style: Gen-Z hype-girl bestie, playful, warm, a bit cheeky, lots of emojis, short punchy lines, NOT professional, NOT generic quotes. Mix it up every day (today is ${f.todayWeekday} ${f.today}).
 Use ONLY the facts below with their real numbers. Never invent achievements, numbers or events. If something wasn't logged, don't mention it (or tease her gently to log it). Celebrate wins loudly; for misses be cheeky but kind and turn it into today's mission.
 "watch" is her steps + workouts (logged by hand). Keep it SHORT and fun, max 2 lines, no stats dump (no kcal, no heart rate, no workout list): one line about how long she worked out (workoutMin, or exerciseMin if no workout) like "you worked out 45 min, are your muscles burning? 🔥", and one about her steps like "you walked 8.4k steps, way to go!" (tease cheekily if under stepGoal).
-Each "highlights" item is a win / special thing she logged on her Wins page (steps, yoga, volunteering...): make a BIG deal of each one, by name.
+Each "highlights" item is a win / special thing she logged on her Memories page (steps, yoga, volunteering...): make a BIG deal of each one, by name.
 
 FACTS ABOUT YESTERDAY (${f.yesterday.weekday}):
 ${JSON.stringify(f.yesterday)}
