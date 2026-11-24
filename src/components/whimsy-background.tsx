@@ -5,6 +5,7 @@ import type { Env, Mouse, SceneMaker } from "./whimsy/engine";
 import { chimes, fireflies, koi, lanterns } from "./whimsy/scenes-a";
 import { jellyfish, planes, sakura, stars } from "./whimsy/scenes-b";
 import { garden } from "./whimsy/garden";
+import { cursorCss, type CursorKey } from "./whimsy/cursors";
 
 /** Which interactive background each tab gets. The Content tab keeps its own pink look. */
 const SCENES: { match: (p: string) => boolean; scene: SceneMaker }[] = [
@@ -19,6 +20,27 @@ const SCENES: { match: (p: string) => boolean; scene: SceneMaker }[] = [
 ];
 const sceneFor = (path: string) => SCENES.find((s) => s.match(path))?.scene ?? lanterns;
 
+/** Which cursor icon each tab gets, matching its background (Home and login get the lantern). */
+const CURSOR_FOR: [string[], CursorKey][] = [
+  [["/finance"], "koi"], [["/calendar"], "sakura"], [["/studies"], "brush"], [["/updates", "/opportunities"], "jelly"],
+  [["/weight", "/health"], "wisteria"], [["/habits"], "firefly"], [["/goals"], "plane"], [["/wins"], "star"], [["/content"], "heart"],
+];
+const cursorFor = (path: string): CursorKey => CURSOR_FOR.find(([ps]) => ps.some((p) => path.startsWith(p)))?.[1] ?? "lantern";
+
+/** Swaps the mouse cursor for this tab's icon. Text boxes keep the normal text cursor so typing feels right. */
+function useTabCursor(key: CursorKey) {
+  useEffect(() => {
+    let el = document.getElementById("tab-cursor") as HTMLStyleElement | null;
+    if (!el) { el = document.createElement("style"); el.id = "tab-cursor"; document.head.appendChild(el); }
+    el.textContent = `@media (pointer: fine) {
+  html, body { cursor: ${cursorCss(key, "auto")}; }
+  a, button, summary, label, select, [role=button], [role=tab], input[type=checkbox], input[type=radio], input[type=file], input[type=range], .cursor-pointer { cursor: ${cursorCss(key, "pointer")}; }
+  input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=range]), textarea, [contenteditable=true] { cursor: text; }
+  button:disabled { cursor: not-allowed; }
+}`;
+  }, [key]);
+}
+
 /** Clicks on these are the page's own; only clicks on empty background reach the scene. */
 const INTERACTIVE = "a, button, input, select, textarea, label, summary, [role=button], .card, header, nav, form";
 
@@ -32,6 +54,7 @@ export function WhimsyBackground() {
   const ref = useRef<HTMLCanvasElement>(null);
   const hidden = path.startsWith("/content");
   const maker = sceneFor(path);
+  useTabCursor(cursorFor(path));
 
   useEffect(() => {
     const cv = ref.current;
