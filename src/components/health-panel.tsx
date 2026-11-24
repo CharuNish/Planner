@@ -10,7 +10,7 @@ import { analyseHealth, healthHype, isGymWorkout, workoutKind, KIND_ICON, stepMo
 
 const k = (n: number | null | undefined) => (n == null ? "–" : Math.round(n).toLocaleString("en-US"));
 
-/** Steps + workouts part of the Body & Health tab. Everything is logged by hand (no Apple Health access). */
+/** Steps + workouts part of the Glow Up tab. Everything is logged by hand (no Apple Health access). */
 export function HealthPanel({ days, demo, hypeOffset = 0 }: { days: HealthDay[]; demo: boolean; hypeOffset?: number }) {
   const today = todayISO();
   const a = analyseHealth(days, today);

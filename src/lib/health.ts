@@ -25,7 +25,7 @@ export type HealthDay = {
 export const HEALTH_TAB = "Health";
 export const WORKOUT_TAB = "Workouts";
 export const WORKOUT_HEADERS = ["Date", "Type", "Minutes", "Notes"];
-/** One-tap choices on the Body & Health tab. */
+/** One-tap choices on the Glow Up tab. */
 export const WORKOUT_CHOICES = ["Strength", "Cardio", "HIIT", "Yoga", "Pilates", "Run", "Walk", "Dance"];
 export const HEALTH_HEADERS = ["Date", "Steps", "Distance (km)", "Active (kcal)", "Exercise (min)", "Resting HR", "Avg HR", "Min HR", "Max HR", "Workouts", "Workout (min)", "Synced At"];
 
@@ -104,7 +104,7 @@ export async function loadHealth(): Promise<{ demo: boolean; days: HealthDay[] }
   })).filter((d) => d.date);
   // If a date somehow appears twice, keep the last one.
   const map = new Map(days.map((d) => [d.date, d]));
-  // Workouts you log by hand on the Body & Health tab (iPhone Shortcuts can't read workouts on every iPhone).
+  // Workouts you log by hand on the Glow Up tab (iPhone Shortcuts can't read workouts on every iPhone).
   const manual = await readSheet(config.google.lifeSheetId, WORKOUT_TAB).catch(() => []);
   for (const r of manual) {
     const date = parseDate(r["date"]); const type = str(r["type"]);
@@ -343,7 +343,7 @@ export function workoutPlan(days: HealthDay[], today = todayISO()) {
   return { byKind, week: week.length, weekMin: Math.round(week.reduce((s, w) => s + w.minutes, 0)), month: month.length, cardioMin, progress, topTypes, focus, next, alsoNote };
 }
 
-// ───── Manual step logging (Body & Health tab) ─────
+// ───── Manual step logging (Glow Up tab) ─────
 /** Saves the day's step count in the Health tab: updates that date's row, or adds one. */
 export async function saveSteps(date: string, steps: number) {
   const sheet = config.google.lifeSheetId;
@@ -375,7 +375,7 @@ export function stepMonth(days: HealthDay[], today = todayISO()) {
   };
 }
 
-/** Should the Body & Health tab throw a party? Looks at today, or yesterday if today isn't logged yet. */
+/** Should the Glow Up tab throw a party? Looks at today, or yesterday if today isn't logged yet. */
 export function stepParty(days: HealthDay[], today = todayISO()): { date: string; steps: number; kind: "goal" | "huge" } | null {
   const pick = days.find((d) => d.date === today && (d.steps ?? 0) > 0) ?? days.find((d) => d.date === addDays(today, -1) && (d.steps ?? 0) > 0);
   if (!pick || pick.steps === null) return null;

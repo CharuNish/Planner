@@ -1,4 +1,4 @@
-/* Garden portal (Body & Health): a wisteria archway opening onto pink clouds, built from three picture layers
+/* Garden portal (Glow Up): a wisteria archway opening onto pink clouds, built from three picture layers
  * in public/whimsy/ that slide at different depths with the cursor, a sideways camera sweep in from the flowers when the page opens,
  * drifting petals and sparkles, and a glowing orb that trails the cursor. A click scatters petals. */
 import { glow, pick, rand, sway, TAU, vgrad, type SceneMaker } from "./engine";

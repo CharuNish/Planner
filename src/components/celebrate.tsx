@@ -3,7 +3,7 @@
 // Each tab uses a different one so wins never feel copy-paste:
 //   fireworks → Studies (deadline finished)      coins   → Finance (saved more than last month)
 //   balloons  → Milestones (goal achieved)       hearts  → Content (follower goal hit)
-//   confetti / stars → spare ones (e.g. Body & Health step goal)
+//   confetti / stars → spare ones (e.g. Glow Up step goal)
 // No libraries: one <canvas> drawn for ~5 seconds, then removed.
 import { useEffect, useState } from "react";
 
