@@ -16,14 +16,14 @@ const SCENES: { match: (p: string) => boolean; scene: SceneMaker }[] = [
   { match: (p) => p.startsWith("/weight") || p.startsWith("/health"), scene: garden },
   { match: (p) => p.startsWith("/habits"), scene: fireflies },
   { match: (p) => p.startsWith("/goals"), scene: planes },
-  { match: (p) => p.startsWith("/wins"), scene: stars },
+  { match: (p) => p.startsWith("/memories") || p.startsWith("/wins"), scene: stars },
 ];
 const sceneFor = (path: string) => SCENES.find((s) => s.match(path))?.scene ?? lanterns;
 
 /** Which cursor icon each tab gets, matching its background (Home and login get the lantern). */
 const CURSOR_FOR: [string[], CursorKey][] = [
   [["/finance"], "koi"], [["/calendar"], "sakura"], [["/studies"], "brush"], [["/updates", "/opportunities"], "jelly"],
-  [["/weight", "/health"], "wisteria"], [["/habits"], "firefly"], [["/goals"], "plane"], [["/wins"], "star"], [["/content"], "heart"],
+  [["/weight", "/health"], "wisteria"], [["/habits"], "firefly"], [["/goals"], "plane"], [["/memories", "/wins"], "star"], [["/content"], "heart"],
 ];
 const cursorFor = (path: string): CursorKey => CURSOR_FOR.find(([ps]) => ps.some((p) => path.startsWith(p)))?.[1] ?? "lantern";
 
@@ -42,7 +42,7 @@ function useTabCursor(key: CursorKey) {
 }
 
 /** Clicks on these are the page's own; only clicks on empty background reach the scene. */
-const INTERACTIVE = "a, button, input, select, textarea, label, summary, [role=button], .card, header, nav, form";
+const INTERACTIVE = "a, button, input, select, textarea, label, summary, [role=button], .card, .polaroid, header, nav, form";
 
 /**
  * Whimsical background drawn on a canvas behind the page. Things in it react to the cursor

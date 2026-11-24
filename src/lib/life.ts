@@ -219,28 +219,47 @@ export async function getCountdown(): Promise<{ date: string; label: string }> {
 
 // ───── Wins (special / good things you did each day) ─────
 // "Wins" tab in the Life sheet: Date | Win | Category | Photo. The Wins page adds rows (and creates the tab the first time).
-export type Win = { date: string; text: string; category: string; photo: string; row: number };
+// The order you drag them into on the Wins page is saved in an auto-made "WinOrder" tab (Key | Position), so the Wins rows never change.
+export type Win = { date: string; text: string; category: string; photo: string; row: number; key: string };
+export const WIN_ORDER_TAB = "WinOrder";
+export const winKey = (date: string, text: string) => `${date}|${text.replace(/\s+/g, " ").trim()}`;
+/** Puts wins in your saved order. Wins you haven't placed yet (new ones) go first, newest first. */
+export function orderWins(items: Win[], order: string[]): Win[] {
+  const pos = new Map(order.map((k, i) => [k, i]));
+  const fresh = items.filter((w) => !pos.has(w.key));
+  const placed = items.filter((w) => pos.has(w.key)).sort((a, b) => pos.get(a.key)! - pos.get(b.key)!);
+  return [...fresh, ...placed];
+}
 export const WIN_HEADERS = ["Date", "Win", "Category", "Photo"];
 export const WIN_CATEGORIES: { key: string; icon: string }[] = [
   { key: "Fitness", icon: "🏃‍♀️" }, { key: "Mind", icon: "🧘‍♀️" }, { key: "Kindness", icon: "💝" }, { key: "Learning", icon: "🧠" },
-  { key: "Career", icon: "💼" }, { key: "Fun", icon: "🎉" }, { key: "Self-care", icon: "🛁" }, { key: "Other", icon: "✨" },
+  { key: "Career", icon: "💼" }, { key: "Fun", icon: "🎉" }, { key: "Self-care", icon: "🛁" }, { key: "Love", icon: "💗" },
+  { key: "Travel", icon: "✈️" }, { key: "Tough day", icon: "🌧️" }, { key: "Lesson", icon: "🌱" }, { key: "Other", icon: "✨" },
 ];
+/** Memories in these categories are kept, but never bragged about as a "win" (Telegram, streaks, stats). */
+export const NOT_A_WIN = ["tough day", "lesson"];
+export const isWin = (w: { category: string }) => !NOT_A_WIN.includes((w.category || "").toLowerCase());
 export const winIcon = (c: string) => WIN_CATEGORIES.find((x) => x.key.toLowerCase() === c.toLowerCase())?.icon || "✨";
 export async function loadWins(): Promise<{ demo: boolean; items: Win[] }> {
   if (lifeIsDemo()) {
     const t = todayISO();
     const d = [
       [0, "Walked 10,412 steps 👟", "Fitness"], [-1, "Held a yoga headstand for 20 seconds!!", "Mind"], [-1, "Volunteered at the animal shelter", "Kindness"],
-      [-2, "Prof said my figure was the clearest in the class", "Learning"], [-4, "Cooked air fryer chickpeas and they slapped", "Fun"], [-6, "First 5K run without stopping", "Fitness"],
+      [-2, "Prof said my figure was the clearest in the class", "Learning"], [-4, "Cooked air fryer chickpeas and they slapped", "Fun"], [-6, "First 5K run without stopping", "Fitness"], [-7, "Rough day, cried a bit, still finished the report", "Tough day"], [-9, "Beach sunset with the girls", "Fun"],
     ] as const;
-    return { demo: true, items: d.map(([o, text, category], i) => ({ date: addDays(t, o), text, category, photo: "", row: i + 2 })) };
+    return { demo: true, items: d.map(([o, text, category], i) => ({ date: addDays(t, o), text, category, photo: "", row: i + 2, key: winKey(addDays(t, o), text) })) };
   }
   const rows = await tab("Wins").catch(() => []);
-  return {
-    demo: false,
-    items: rows.map((r, i) => ({ date: parseDate(r["date"]) || "", text: str(r["win"] ?? r["highlight"]), category: str(r["category"]) || "Other", photo: str(r["photo"]), row: i + 2 }))
-      .filter((w) => w.date && w.text).sort((a, b) => b.date.localeCompare(a.date) || b.row - a.row),
-  };
+  const items = rows.map((r, i) => { const date = parseDate(r["date"]) || "", text = str(r["win"] ?? r["highlight"]); return { date, text, category: str(r["category"]) || "Other", photo: str(r["photo"]), row: i + 2, key: winKey(date, text) }; })
+    .filter((w) => w.date && w.text).sort((a, b) => b.date.localeCompare(a.date) || b.row - a.row);
+  return { demo: false, items };
+}
+
+/** Same as loadWins, but in the order you arranged them on the Wins page. */
+export async function loadWinsOrdered(): Promise<{ demo: boolean; items: Win[] }> {
+  const [w, orderRows] = await Promise.all([loadWins(), lifeIsDemo() ? Promise.resolve([]) : tab(WIN_ORDER_TAB).catch(() => [])]);
+  const order = orderRows.slice().sort((a, b) => num(a["position"]) - num(b["position"])).map((r) => str(r["key"])).filter(Boolean);
+  return { demo: w.demo, items: orderWins(w.items, order) };
 }
 
 export function analyseWins(items: Win[], today = todayISO()) {

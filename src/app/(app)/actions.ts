@@ -208,7 +208,7 @@ export async function setGoalPhoto(_: Result, f: FormData): Promise<Result> {
 export async function addWin(_: Result, f: FormData): Promise<Result> {
   const n = needLife(); if (n) return n;
   const text = String(f.get("text") || "").trim();
-  if (!text) return { error: "What did you do? Write it down, queen 👑" };
+  if (!text) return { error: "What happened? Write it down, queen 👑" };
   const date = String(f.get("date") || todayISO());
   let photo = String(f.get("photoUrl") || "").trim();
   const file = f.get("photo");
@@ -226,7 +226,21 @@ export async function addWin(_: Result, f: FormData): Promise<Result> {
   try { await appendRowCreatingTab(config.google.lifeSheetId, "Wins", ["Date", "Win", "Category", "Photo"], [date, text, String(f.get("category") || "Other"), photo]); }
   catch (e) { return { error: String(e) }; }
   revalidatePath("/", "layout");
-  return { ok: "Saved! I'll brag about this in tomorrow's morning message 😘" };
+  const tough = ["tough day", "lesson"].includes(String(f.get("category") || "").toLowerCase());
+  return { ok: tough ? "Saved. Proud of you for getting through it 🫂" : "Saved! I'll brag about this in tomorrow's morning message 😘" };
+}
+
+/** Saves the order you dragged your wins into (Life sheet "WinOrder" tab: Key | Position). The Wins tab itself is never touched. */
+export async function saveWinOrder(keys: string[]): Promise<Result> {
+  if (lifeIsDemo()) return { ok: "Demo mode: order kept until you refresh." };
+  const clean = [...new Set(keys.map((k) => String(k).trim()).filter(Boolean))].slice(0, 5000);
+  try {
+    const { WIN_ORDER_TAB } = await import("@/lib/life");
+    const { replaceTab } = await import("@/lib/google");
+    await replaceTab(config.google.lifeSheetId, WIN_ORDER_TAB, ["Key", "Position"], clean.map((k, i) => [k, i + 1]));
+  } catch (e) { return { error: String(e).slice(0, 200) }; }
+  revalidatePath("/memories");
+  return { ok: "Saved ✓" };
 }
 
 /** Sends the morning bestie message right now (to test it). */

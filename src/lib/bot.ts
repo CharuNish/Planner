@@ -10,7 +10,7 @@ import { fmt, loadFinance, upcomingBills } from "./finance";
 import { appendRowCreatingTab, readSheet, str } from "./google";
 import { analyseHealth, loadHealth } from "./health";
 import { dailyShuffle } from "./hype";
-import { loadHabits, loadWins } from "./life";
+import { isWin, loadHabits, loadWins } from "./life";
 import { buildMorningMessage, sendTelegram } from "./morning";
 import { hoursLeftToday, studyNudges } from "./nudges";
 import { analyseStudies, loadStudies } from "./studies";
@@ -118,7 +118,7 @@ async function gatherToday(): Promise<Today> {
     t.topSpend = top ? `${top.category || top.description || "something"} ${fmt(top.amount)}` : null;
     t.billsTomorrow = upcomingBills(fin.bills, 1).filter((b) => daysBetween(today, b.due) === 1).map((b) => `${b.name} ${fmt(b.amount)}`);
   }
-  if (wins) t.wins = wins.items.filter((w) => w.date === today).map((w) => w.text);
+  if (wins) t.wins = wins.items.filter((w) => w.date === today && isWin(w)).map((w) => w.text);
   return t;
 }
 
