@@ -2,7 +2,7 @@
  * so it looks the same on every computer) with a soft dark outline so it shows on light and dark spots.
  * `hot` is the click point inside the icon. Phones and tablets have no cursor, so this only shows with a mouse. */
 
-export type CursorKey = "lantern" | "koi" | "sakura" | "brush" | "jelly" | "wisteria" | "firefly" | "plane" | "star" | "heart";
+export type CursorKey = "lantern" | "coin" | "sakura" | "brush" | "jelly" | "wisteria" | "firefly" | "plane" | "star" | "heart";
 
 const wrap = (body: string) =>
   `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">` +
@@ -17,11 +17,13 @@ export const CURSORS: Record<CursorKey, { svg: string; hot: [number, number] }> 
     `<path d="M16 5v20M10 7.5c-2 5-2 10 0 15M22 7.5c2 5 2 10 0 15" stroke="#c2410c" stroke-width="1" fill="none" opacity=".7"/>` +
     `<ellipse cx="16" cy="14" rx="4" ry="5" fill="#fff3c4" opacity=".75"/>` +
     `<rect x="13" y="25" width="6" height="2.5" rx="1" fill="#7a3b12"/><path d="M16 27.5v3" stroke="#c2410c" stroke-width="1.5"/>`) },
-  // Finance: a little orange-and-white koi
-  koi: { hot: [6, 6], svg: wrap(
-    `<path d="M5 5c6 0 13 4 16 10l-3 3C12 15 7 11 5 5z" fill="#fff" stroke="#9a3412" stroke-width="1.2"/>` +
-    `<path d="M9 7c3 1 6 3 8 6l-2 1c-2-3-4-5-6-7z" fill="#f97316"/><circle cx="8" cy="7.5" r="1" fill="#1f2937"/>` +
-    `<path d="M19 17l8 2-3 3 1 6-6-5z" fill="#fb923c" stroke="#9a3412" stroke-width="1.2" stroke-linejoin="round"/>`) },
+  // Finance: a shiny gold coin
+  coin: { hot: [16, 16], svg: wrap(
+    `<circle cx="16" cy="16" r="12.5" fill="#f5b301" stroke="#92400e" stroke-width="1.4"/>` +
+    `<circle cx="16" cy="16" r="9.5" fill="#fcd34d" stroke="#b45309" stroke-width="1"/>` +
+    `<text x="16" y="19.5" text-anchor="middle" font-family="Georgia, serif" font-size="9.5" font-weight="700" fill="#92400e">Rs</text>` +
+    `<path d="M9.5 11.5a8 8 0 0 1 5-4" stroke="#fff" stroke-width="1.8" stroke-linecap="round" fill="none" opacity=".85"/>` +
+    `<path d="M26 5l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z" fill="#fff"/>`) },
   // Calendar: a cherry blossom
   sakura: { hot: [16, 16], svg: wrap(
     [0, 72, 144, 216, 288].map((a) => `<path transform="rotate(${a} 16 16)" d="M16 16c-4-4-5-9-2-12l2 2 2-2c3 3 2 8-2 12z" fill="#ffc4dc" stroke="#db2777" stroke-width="1"/>`).join("") +
