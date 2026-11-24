@@ -166,3 +166,70 @@ select.input option { background: var(--card-solid); }
 @keyframes celebrate-bob { 0%,100% { transform: translateY(0) rotate(-6deg) scale(1); } 50% { transform: translateY(-6px) rotate(8deg) scale(1.12); } }
 .celebrate-bob { animation: celebrate-bob 1.1s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) { .celebrate-bob { animation: none; } }
+
+/* ───── Switzerland backgrounds (src/components/swiss-background.tsx) ───── */
+.swiss-bg { position: fixed; inset: 0; z-index: -10; pointer-events: none; overflow: hidden; background: #070912; }
+.swiss-svg { position: absolute; inset: -2%; width: 104%; height: 104%; animation: swiss-in 1.2s ease both; }
+@keyframes swiss-in { from { opacity: 0; transform: scale(1.04); } to { opacity: 1; transform: none; } }
+.sw-depth { transform: translate(calc(var(--mx, 0) * var(--d) * -70px), calc(var(--my, 0) * var(--d) * -34px)); will-change: transform; }
+.swiss-light { position: absolute; inset: 0; background: radial-gradient(520px 420px at var(--lx, 50%) var(--ly, 30%), rgba(255, 244, 220, .13), transparent 70%); mix-blend-mode: screen; }
+.swiss-scrim {
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(120% 90% at 50% 40%, transparent 40%, rgba(5, 7, 16, .55) 100%),
+    linear-gradient(180deg, rgba(7, 9, 18, .42) 0%, rgba(7, 9, 18, .22) 35%, rgba(7, 9, 18, .5) 100%);
+}
+.sw-drift { animation: sw-drift 100s linear infinite; }
+@keyframes sw-drift { 0% { transform: translateX(-900px); opacity: 0; } 8% { opacity: 1; } 92% { opacity: 1; } 100% { transform: translateX(900px); opacity: 0; } }
+.sw-twinkle { animation: sw-twinkle 3s ease-in-out infinite; }
+@keyframes sw-twinkle { 0%, 100% { opacity: .15; } 50% { opacity: 1; } }
+.sw-flicker { animation: sw-flicker 6s steps(1) infinite; }
+@keyframes sw-flicker { 0%, 100% { opacity: 1; } 47% { opacity: .35; } 52% { opacity: 1; } 80% { opacity: .7; } }
+.sw-shimmer { animation: sw-shimmer 3.5s ease-in-out infinite; opacity: .1; }
+@keyframes sw-shimmer { 0%, 100% { opacity: .05; transform: translateX(0); } 50% { opacity: .65; transform: translateX(8px); } }
+.sw-birds { animation: sw-birds 45s linear infinite; }
+@keyframes sw-birds { from { transform: translate(-500px, 40px); } to { transform: translate(1900px, -60px); } }
+.sw-flap { animation: sw-flap .7s ease-in-out infinite alternate; transform-box: fill-box; transform-origin: center; }
+@keyframes sw-flap { to { transform: scaleY(.35); } }
+.sw-train { animation: sw-train 26s linear infinite; }
+@keyframes sw-train { 0% { transform: translateX(-200px); } 72% { transform: translateX(1900px); } 100% { transform: translateX(1900px); } }
+.sw-tram { animation: sw-tram 22s linear infinite; }
+@keyframes sw-tram { 0% { transform: translateX(-300px); } 65% { transform: translateX(1800px); } 100% { transform: translateX(1800px); } }
+.sw-gondola { animation: sw-gondola 34s linear infinite; }
+.sw-gondola-2 { animation-direction: reverse; animation-delay: -15s; }
+@keyframes sw-gondola { from { transform: translate(-100px, 0); } to { transform: translate(1750px, -719px); } }
+.sw-glide { animation: sw-glide-a 38s ease-in-out infinite; }
+.sw-glide-2 { animation: sw-glide-b 52s ease-in-out infinite; }
+.sw-glide-3 { animation: sw-glide-a 64s ease-in-out infinite reverse; animation-delay: -20s; }
+@keyframes sw-glide-a { 0%, 100% { transform: translate(380px, 330px) rotate(-6deg); } 25% { transform: translate(760px, 250px) rotate(4deg); } 50% { transform: translate(1120px, 360px) rotate(8deg); } 75% { transform: translate(760px, 460px) rotate(-4deg); } }
+@keyframes sw-glide-b { 0%, 100% { transform: translate(1100px, 220px) rotate(5deg); } 33% { transform: translate(620px, 380px) rotate(-6deg); } 66% { transform: translate(900px, 520px) rotate(3deg); } }
+.sw-fall { animation: sw-fall 1.1s linear infinite; }
+@keyframes sw-fall { to { stroke-dashoffset: -400; } }
+.sw-burst { animation: sw-burst 6.5s ease-out infinite; opacity: 0; transform: scale(.2); }
+@keyframes sw-burst { 0% { opacity: 0; transform: scale(.15); } 4% { opacity: 1; } 22% { opacity: .9; transform: scale(1.1); } 34% { opacity: 0; transform: scale(1.2) translateY(14px); } 100% { opacity: 0; transform: scale(1.2); } }
+.sw-jet { animation: sw-jet 2.4s ease-in-out infinite alternate; }
+@keyframes sw-jet { from { transform: scaleY(.96); opacity: .9; } to { transform: scaleY(1.02); opacity: 1; } }
+.sw-rays { animation: sw-rays 80s linear infinite; }
+@keyframes sw-rays { to { transform: rotate(360deg); } }
+.sw-sway { animation: sw-sway 3.2s ease-in-out infinite alternate; }
+@keyframes sw-sway { from { transform: rotate(-7deg); } to { transform: rotate(7deg); } }
+.sw-smoke { animation: sw-smoke 5s ease-in-out infinite; }
+@keyframes sw-smoke { 0% { transform: translateY(8px); opacity: 0; } 30% { opacity: 1; } 100% { transform: translate(14px, -26px); opacity: 0; } }
+.sw-cowhead { animation: sw-cow 4s ease-in-out infinite; transform-box: fill-box; transform-origin: right center; }
+@keyframes sw-cow { 0%, 60%, 100% { transform: rotate(0); } 70%, 90% { transform: rotate(-18deg) translateY(4px); } }
+.sw-snow {
+  position: absolute; inset: -20% 0 0 0;
+  background-image:
+    radial-gradient(2px 2px at 20px 30px, #fff 50%, transparent 51%), radial-gradient(2px 2px at 120px 90px, #fff 50%, transparent 51%),
+    radial-gradient(3px 3px at 60px 160px, #fff 50%, transparent 51%), radial-gradient(2px 2px at 170px 200px, #fff 50%, transparent 51%),
+    radial-gradient(3px 3px at 230px 60px, rgba(255,255,255,.8) 50%, transparent 51%), radial-gradient(4px 4px at 90px 250px, rgba(255,255,255,.7) 50%, transparent 51%);
+  background-size: 260px 280px;
+  animation: sw-snow 14s linear infinite;
+}
+.sw-snow::after { content: ""; position: absolute; inset: 0; background: inherit; background-size: 400px 420px; animation: sw-snow2 22s linear infinite; opacity: .6; }
+@keyframes sw-snow { from { background-position: 0 0; } to { background-position: 60px 280px; } }
+@keyframes sw-snow2 { from { background-position: 0 0; } to { background-position: -80px 420px; } }
+@media (prefers-reduced-motion: reduce) {
+  .swiss-svg, .swiss-svg *, .sw-snow, .sw-snow::after { animation: none !important; }
+  .sw-burst { opacity: 1; transform: none; }
+}
