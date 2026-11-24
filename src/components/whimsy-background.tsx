@@ -22,7 +22,7 @@ const sceneFor = (path: string) => SCENES.find((s) => s.match(path))?.scene ?? l
 
 /** Which cursor icon each tab gets, matching its background (Home and login get the lantern). */
 const CURSOR_FOR: [string[], CursorKey][] = [
-  [["/finance"], "koi"], [["/calendar"], "sakura"], [["/studies"], "brush"], [["/updates", "/opportunities"], "jelly"],
+  [["/finance"], "coin"], [["/calendar"], "sakura"], [["/studies"], "brush"], [["/updates", "/opportunities"], "jelly"],
   [["/weight", "/health"], "wisteria"], [["/habits"], "firefly"], [["/goals"], "plane"], [["/memories", "/wins"], "star"], [["/content"], "heart"],
 ];
 const cursorFor = (path: string): CursorKey => CURSOR_FOR.find(([ps]) => ps.some((p) => path.startsWith(p)))?.[1] ?? "lantern";
