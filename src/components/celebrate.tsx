@@ -2,7 +2,7 @@
 // Celebration animations, shared by every tab.
 // Each tab uses a different one so wins never feel copy-paste:
 //   fireworks → Studies (deadline finished)      coins   → Finance (saved more than last month)
-//   balloons  → Mini goals (goal achieved)       hearts  → Content (follower goal hit)
+//   balloons  → Milestones (goal achieved)       hearts  → Content (follower goal hit)
 //   confetti / stars → spare ones (e.g. Body & Health step goal)
 // No libraries: one <canvas> drawn for ~5 seconds, then removed.
 import { useEffect, useState } from "react";

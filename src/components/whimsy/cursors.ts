@@ -50,7 +50,7 @@ export const CURSORS: Record<CursorKey, { svg: string; hot: [number, number] }> 
     `<ellipse cx="11" cy="10" rx="5" ry="3" fill="#e0f2fe" fill-opacity=".85" stroke="#334155" stroke-width=".8" transform="rotate(-30 11 10)"/>` +
     `<ellipse cx="21" cy="10" rx="5" ry="3" fill="#e0f2fe" fill-opacity=".85" stroke="#334155" stroke-width=".8" transform="rotate(30 21 10)"/>` +
     `<ellipse cx="16" cy="13" rx="2.6" ry="4.5" fill="#1f2937"/>`) },
-  // Mini goals: a paper plane, its nose is the click point
+  // Milestones: a paper plane, its nose is the click point
   plane: { hot: [3, 3], svg: wrap(
     `<path d="M3 3l26 9-11 3-3 11z" fill="#fff" stroke="#334155" stroke-width="1.3" stroke-linejoin="round"/>` +
     `<path d="M3 3l15 12" stroke="#94a3b8" stroke-width="1.2"/><path d="M18 15l-3 11 0-8z" fill="#cbd5e1"/>`) },
