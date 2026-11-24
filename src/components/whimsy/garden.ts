@@ -1,5 +1,5 @@
 /* Garden portal (Mini goals): a wisteria archway opening onto pink clouds, built from three picture layers
- * in public/whimsy/ that slide at different depths with the cursor, a slow glide-in when the page opens,
+ * in public/whimsy/ that slide at different depths with the cursor, a sideways camera sweep in from the flowers when the page opens,
  * drifting petals and sparkles, and a glowing orb that trails the cursor. A click scatters petals. */
 import { glow, pick, rand, sway, TAU, vgrad, type SceneMaker } from "./engine";
 
@@ -39,17 +39,18 @@ export const garden: SceneMaker = (env) => {
       const { W, H, mouse } = env;
       const { mx, my } = sway(env, t);
       vgrad(env, [[0, "#b9a3e6"], [0.5, "#f2b6d6"], [1, "#2a1c3d"]]);
-      // Opening shot: the camera glides into the garden over the first few seconds
-      const k = 1 - (1 - Math.min(1, t / 4)) ** 3, intro = (1 - k) * 0.22;
+      // Opening shot, like the reference: the camera starts close among the flowers off to the left side
+      // and sweeps sideways (and back a little) until the portal sits in the middle. Near layers travel furthest.
+      const u = Math.min(1, t / 5), k = u < 0.5 ? 4 * u * u * u : 1 - (-2 * u + 2) ** 3 / 2, side = (1 - k) * W, intro = (1 - k);
       // Back: clouds, barely moving and drifting slowly
-      cover(sky, -mx * 12 + Math.sin(t * 0.04) * 26, -my * 8 + Math.cos(t * 0.05) * 6, 1.12 + intro * 0.5 + Math.sin(t * 0.07) * 0.015, 0.62);
+      cover(sky, -mx * 12 + side * 0.18 + Math.sin(t * 0.04) * 26, -my * 8 + Math.cos(t * 0.05) * 6, 1.12 + intro * 0.4 + Math.sin(t * 0.07) * 0.015, 0.62);
       // Glow through the portal
-      const portal = { x: W / 2 - mx * 26, y: H * 0.52 - my * 14 };
+      const portal = { x: W / 2 - mx * 26 + side * 0.5, y: H * 0.52 - my * 14 };
       ctx.globalCompositeOperation = "lighter";
       glow(ctx, portal.x, portal.y, Math.min(W, H) * (0.32 + Math.sin(t * 0.8) * 0.02), "rgba(255,210,235,.28)");
       ctx.globalCompositeOperation = "source-over";
       // Middle: the archway
-      cover(arch, -mx * 34, -my * 18, 1.08 + intro, 0.55);
+      cover(arch, -mx * 34 + side * 0.5, -my * 18, 1.08 + intro * 1.1, 0.55);
       ctx.globalCompositeOperation = "lighter";
       // Sparkles drifting up, drawn toward the cursor
       for (const s of sparks) {
@@ -61,7 +62,7 @@ export const garden: SceneMaker = (env) => {
       }
       ctx.globalCompositeOperation = "source-over";
       // Front: the near flowers and canopy, moving the most
-      cover(front, -mx * 70, -my * 36, 1.16 + intro * 1.6, 0.55);
+      cover(front, -mx * 70 + side * 0.75, -my * 36, 1.16 + intro * 1.6, 0.55);
       // Falling wisteria petals, swirling around the cursor
       if (Math.random() < dt * (env.small ? 2 : 4)) petals.push(newPetal());
       for (const p of petals) {

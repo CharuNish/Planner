@@ -235,19 +235,34 @@ export const stars: SceneMaker = (env) => {
   };
 };
 
-/* ───────────── Jellyfish: deep ocean light rays, glowing jellyfish drift and dodge your cursor ───────────── */
-type Jelly = { x: number; y: number; vx: number; vy: number; s: number; hue: number; ph: number };
+/* ───────────── Jellyfish: real jellyfish photos (public/whimsy/jelly-N.webp) pulse and drift up through
+ * deep-ocean light rays, swerve away from your cursor, and a click sends up bubbles and startles them. ───────────── */
+const JELLY_SRC = [1, 2, 3, 4, 5].map((n) => `/whimsy/jelly-${n}.webp`);
+/** Glow colour behind each photo, and whether it swims sideways (jelly 4 faces right) instead of rising. */
+const JELLY_LOOK: { glow: string; side?: boolean }[] = [
+  { glow: "200,230,255" }, { glow: "90,150,255" }, { glow: "255,170,110" }, { glow: "255,120,130", side: true }, { glow: "255,120,220" },
+];
+type Jelly = { x: number; y: number; vx: number; vy: number; d: number; img: number; ph: number };
 export const jellyfish: SceneMaker = (env) => {
   const { ctx } = env;
+  const imgs = JELLY_SRC.map((src) => { const i = new Image(); i.decoding = "async"; i.src = src; return i; });
   let jellies: Jelly[] = [], bubbles: { x: number; y: number; r: number; v: number }[] = [], motes: { x: number; y: number; r: number; ph: number }[] = [];
+  const spawn = (img: number, x: number, y: number): Jelly => ({ x, y, vx: 0, vy: 0, d: rand(0.35, 1), img, ph: rand(0, TAU) });
   return {
     init() {
       const { W, H } = env;
-      jellies = Array.from({ length: env.small ? 5 : 9 }, () => ({ x: rand(0, W), y: rand(0, H), vx: 0, vy: 0, s: rand(0.6, 1.3), hue: pick([190, 280, 320, 170, 250]), ph: rand(0, TAU) }));
+      const n = env.small ? 5 : 8;
+      // Spread them out: each gets its own column and its own height band, shuffled so they don't line up
+      const rows = Array.from({ length: n }, (_, i) => i).sort(() => Math.random() - 0.5);
+      jellies = Array.from({ length: n }, (_, i) => spawn(i % imgs.length, ((i + rand(0.25, 0.75)) / n) * W, ((rows[i] + rand(0.2, 0.8)) / n) * H * 1.1));
+      jellies.sort((a, b) => a.d - b.d); // far ones first so near ones draw on top
       motes = Array.from({ length: 80 }, () => ({ x: rand(0, W), y: rand(0, H), r: rand(0.5, 1.6), ph: rand(0, TAU) }));
       bubbles = [];
     },
-    click(x, y) { for (let i = 0; i < 14; i++) bubbles.push({ x: x + rand(-14, 14), y: y + rand(-8, 8), r: rand(2, 7), v: rand(40, 90) }); },
+    click(x, y) {
+      for (let i = 0; i < 14; i++) bubbles.push({ x: x + rand(-14, 14), y: y + rand(-8, 8), r: rand(2, 7), v: rand(40, 90) });
+      for (const j of jellies) { const dx = j.x - x, dy = j.y - y, d = Math.hypot(dx, dy) || 1; if (d < 320) { j.vx += (dx / d) * 120 * (1 - d / 320); j.vy += (dy / d) * 120 * (1 - d / 320); } }
+    },
     frame(t, dt) {
       const { W, H, mouse } = env;
       vgrad(env, [[0, "#0b4a6e"], [0.4, "#07304d"], [1, "#030d1f"]]);
@@ -258,24 +273,43 @@ export const jellyfish: SceneMaker = (env) => {
         ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(x - 30, 0); ctx.lineTo(x + 30, 0); ctx.lineTo(x + 220, H); ctx.lineTo(x + 60, H); ctx.fill();
       }
       for (const m of motes) { m.y -= 4 * dt; if (m.y < -5) m.y = H + 5; ctx.fillStyle = `rgba(180,240,255,${0.25 + 0.25 * Math.sin(t + m.ph)})`; ctx.beginPath(); ctx.arc(m.x + Math.sin(t * 0.5 + m.ph) * 6, m.y, m.r, 0, TAU); ctx.fill(); }
+      ctx.globalCompositeOperation = "source-over";
+      const base = Math.min(H * 0.46, env.small ? 240 : 400);
       for (const j of jellies) {
-        const pulse = Math.sin(t * 1.6 + j.ph), push = Math.max(0, pulse);
-        if (mouse.active) { const dx = j.x - mouse.x, dy = j.y - mouse.y, d = Math.hypot(dx, dy) || 1; if (d < 200) { j.vx += (dx / d) * (1 - d / 200) * 90 * dt; j.vy += (dy / d) * (1 - d / 200) * 90 * dt; } }
-        j.vy -= push * 30 * dt; j.vy += 6 * dt; j.vx += Math.sin(t * 0.3 + j.ph) * 3 * dt; j.vx *= 0.98; j.vy *= 0.98;
+        const img = imgs[j.img], look = JELLY_LOOK[j.img];
+        const pulse = Math.sin(t * 1.4 + j.ph), push = Math.max(0, pulse);
+        // Swim: a push on each pulse, a gentle sideways wander, and water drag
+        if (look.side) { j.vx += push * 26 * j.d * dt; j.vy += Math.sin(t * 0.4 + j.ph) * 4 * dt; }
+        else { j.vy -= push * 30 * j.d * dt; j.vx += Math.sin(t * 0.3 + j.ph) * 3 * dt; }
+        if (mouse.active) { const dx = j.x - mouse.x, dy = j.y - mouse.y, dd = Math.hypot(dx, dy) || 1; if (dd < 220) { const f = (1 - dd / 220) * 110 * dt; j.vx += (dx / dd) * f; j.vy += (dy / dd) * f; } }
+        j.vx *= 1 - dt * 0.9; j.vy *= 1 - dt * 0.9;
         j.x += j.vx * dt; j.y += j.vy * dt;
-        if (j.y < -120) { j.y = H + 100; j.x = rand(0, W); } if (j.y > H + 140) j.y = -100; if (j.x < -100) j.x = W + 80; if (j.x > W + 100) j.x = -80;
-        const s = 34 * j.s * (env.small ? 0.8 : 1), wide = s * (1 + pulse * 0.12), tall = s * (0.8 - pulse * 0.1);
-        glow(ctx, j.x, j.y, s * 2.4, `hsla(${j.hue},90%,65%,.22)`);
-        ctx.strokeStyle = `hsla(${j.hue},90%,78%,.45)`; ctx.lineWidth = 1.4;
-        for (let k = 0; k < 7; k++) {
-          const ox = j.x + (k - 3) * wide * 0.24; ctx.beginPath(); ctx.moveTo(ox, j.y);
-          for (let q = 1; q <= 8; q++) ctx.lineTo(ox + Math.sin(t * 2 + k + q * 0.6 + j.ph) * 5 * (q / 8) - j.vx * 0.05 * q, j.y + q * s * 0.28 - j.vy * 0.04 * q);
-          ctx.stroke();
+        if (!img.complete || !img.naturalWidth) continue;
+        // Size by depth: far jellies are small, faint and slow
+        const sc = (look.side ? base * 0.85 / img.naturalWidth : base / img.naturalHeight) * (0.4 + j.d * 0.6);
+        const w = img.naturalWidth * sc, h = img.naturalHeight * sc;
+        if (j.y < -h - 40) { j.y = H + 40; j.x = rand(0.05, 0.95) * W; } if (j.y > H + h + 60) j.y = -h;
+        if (j.x < -w - 60) j.x = W + 40; if (j.x > W + w + 60) j.x = -w * 0.6;
+        const a = 0.45 + j.d * 0.5;
+        ctx.save(); ctx.translate(j.x, j.y);
+        ctx.globalCompositeOperation = "lighter";
+        glow(ctx, 0, look.side ? 0 : h * 0.12, Math.max(w, h) * 0.5, `rgba(${look.glow},${0.16 * a})`);
+        ctx.globalCompositeOperation = "source-over";
+        ctx.globalAlpha = a;
+        if (look.side) {
+          // Swims to the right: bell at the front squeezes on each pulse, tentacles trail behind
+          ctx.rotate(Math.atan2(j.vy, Math.max(8, j.vx)) * 0.5);
+          ctx.scale(1 + pulse * 0.04, 1 - pulse * 0.06);
+          ctx.drawImage(img, -w * 0.75, -h / 2, w, h);
+        } else {
+          // Rises bell-first: the bell widens and flattens on each pulse, pivoting from the top
+          ctx.rotate(Math.max(-0.25, Math.min(0.25, j.vx * 0.012)));
+          ctx.scale(1 + pulse * 0.06, 1 - pulse * 0.05);
+          ctx.drawImage(img, -w / 2, -h * 0.12, w, h);
         }
-        const bg = ctx.createRadialGradient(j.x, j.y - tall * 0.4, 0, j.x, j.y, wide);
-        bg.addColorStop(0, `hsla(${j.hue},100%,90%,.75)`); bg.addColorStop(0.7, `hsla(${j.hue},90%,65%,.45)`); bg.addColorStop(1, `hsla(${j.hue},90%,60%,.15)`);
-        ctx.fillStyle = bg; ctx.beginPath(); ctx.ellipse(j.x, j.y, wide, tall, 0, Math.PI, TAU); ctx.quadraticCurveTo(j.x, j.y + tall * 0.25, j.x - wide, j.y); ctx.fill();
+        ctx.restore();
       }
+      ctx.globalCompositeOperation = "lighter";
       ctx.strokeStyle = "rgba(200,240,255,.6)"; ctx.lineWidth = 1;
       for (const b of bubbles) { b.y -= b.v * dt; b.x += Math.sin(t * 3 + b.r) * 0.4; ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, TAU); ctx.stroke(); }
       bubbles = bubbles.filter((b) => b.y > -20);
