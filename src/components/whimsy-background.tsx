@@ -3,7 +3,8 @@ import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import type { Env, Mouse, SceneMaker } from "./whimsy/engine";
 import { chimes, fireflies, koi, lanterns } from "./whimsy/scenes-a";
-import { dandelions, jellyfish, planes, sakura, stars } from "./whimsy/scenes-b";
+import { dandelions, jellyfish, sakura, stars } from "./whimsy/scenes-b";
+import { garden } from "./whimsy/garden";
 
 /** Which interactive background each tab gets. The Content tab keeps its own pink look. */
 const SCENES: { match: (p: string) => boolean; scene: SceneMaker }[] = [
@@ -13,7 +14,7 @@ const SCENES: { match: (p: string) => boolean; scene: SceneMaker }[] = [
   { match: (p) => p.startsWith("/updates") || p.startsWith("/opportunities"), scene: jellyfish },
   { match: (p) => p.startsWith("/weight") || p.startsWith("/health"), scene: dandelions },
   { match: (p) => p.startsWith("/habits"), scene: fireflies },
-  { match: (p) => p.startsWith("/goals"), scene: planes },
+  { match: (p) => p.startsWith("/goals"), scene: garden },
   { match: (p) => p.startsWith("/wins"), scene: stars },
 ];
 const sceneFor = (path: string) => SCENES.find((s) => s.match(path))?.scene ?? lanterns;
