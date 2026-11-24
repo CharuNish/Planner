@@ -103,9 +103,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
             ))}
           </ul>
         )}
-        <p className="text-xs muted mt-2">Why not straight from Google Calendar? Google keeps birthdays private to you, so the planner&apos;s robot account can&apos;t see them even though your calendar is shared with it.</p>
       </Section>
-      <p className="text-xs muted">Tip: in Google Calendar, start a title with a tag like <code>[Gym]</code>, <code>[Exam]</code> or <code>[Bill]</code> to set its colour here.</p>
     </div>
   );
 }
