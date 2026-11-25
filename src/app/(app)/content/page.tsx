@@ -92,10 +92,11 @@ export default async function ContentPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
         <Stat label="💖 Followers" value={<CountUp value={totalFollowers} />} hint={a.totals.map((t) => `${t.channel} ${k(t.followers)}`).join(" · ")} />
         <Stat label="🌱 Gained (30 days)" value={signed(gained)} hint={a.totals.map((t) => `${t.channel} ${signed(t.change30)}`).join(" · ")} />
         <Stat label="💗 Likes this month" value={<CountUp value={a.likesThisMonth} />} hint={`${signed(likesDiff)} vs last month`} />
+        <Stat label="👀 Views this month" value={<CountUp value={a.viewsThisMonth} />} hint={`${signed(a.viewsThisMonth - a.viewsLastMonth)} vs last month`} />
         <Stat label="🎀 Posts this month" value={<CountUp value={a.postsThisMonth} />} hint={a.earned || a.pending ? `${money(a.earned)} earned from collabs` : "keep going, you're doing great"} />
       </div>
 
@@ -137,7 +138,7 @@ export default async function ContentPage() {
         </div>
       </Card>
 
-      <ContentTrends followers={a.followerTrend} likes={a.likesTrend} accounts={ACCOUNTS} channels={[...CHANNELS]} colors={PLATFORM_COLOR} />
+      <ContentTrends followers={a.followerTrend} likes={a.likesTrend} views={a.viewsTrend} accounts={ACCOUNTS} channels={[...CHANNELS]} colors={PLATFORM_COLOR} />
 
       <div className="grid lg:grid-cols-2 gap-5">
         <Card title="👑 Your most loved posts" sub="Top 5 by total likes across platforms">
@@ -150,7 +151,7 @@ export default async function ContentPage() {
                     <div className="truncate font-medium">{u.link ? <a href={u.link} target="_blank" rel="noreferrer" className="hover:underline">{u.title}</a> : u.title}</div>
                     <div className="text-xs muted">{u.channel} · {u.type} · {prettyDate(u.date, { day: "numeric", month: "short" })}</div>
                   </div>
-                  <span className="tabular text-sm">💗 {k(u.totalLikes)}</span>
+                  <span className="tabular text-sm text-right leading-tight">💗 {k(u.totalLikes)}<span className="block text-[11px] muted">👀 {k(u.totalViews)}</span></span>
                 </li>
               ))}
             </ol>
@@ -167,7 +168,7 @@ export default async function ContentPage() {
                 </div>
               ))}
               <div className="text-xs muted pt-2 grid grid-cols-2 gap-1">
-                {a.accounts.filter((x) => x.posts).map((x) => <span key={x.channel + x.platform}>{PLATFORM_ICON[x.platform]} {x.channel} {x.platform}: {k(x.avgLikes)} avg</span>)}
+                {a.accounts.filter((x) => x.posts).map((x) => <span key={x.channel + x.platform}>{PLATFORM_ICON[x.platform]} {x.channel} {x.platform}: {k(x.avgLikes)} likes · {k(x.avgViews)} views avg</span>)}
               </div>
             </div>
           )}
@@ -236,7 +237,7 @@ export default async function ContentPage() {
         )}
       </Card>
 
-      <Card title="🗓️ Recent uploads" sub="Likes per platform, from your Uploads tab">
+      <Card title="🗓️ Recent uploads" sub="Likes 💗 and views 👀 per platform, from your Uploads tab">
         {!a.recent.length ? <p className="text-sm muted">Nothing logged yet. Add a row to the Uploads tab each time you post, and the likes as they come in 💕</p> : (
           <div className="overflow-x-auto -mx-1">
             <table className="w-full text-sm min-w-[620px]">
@@ -246,8 +247,8 @@ export default async function ContentPage() {
                   <tr key={i} className="border-t border-[var(--border)]">
                     <td className="py-2 px-1 muted whitespace-nowrap">{prettyDate(u.date, { day: "numeric", month: "short" })}</td>
                     <td className="py-2 pr-2"><div className="font-medium">{u.title}</div><div className="text-xs muted">{u.channel} · {u.type}</div></td>
-                    {PLATFORMS.map((p) => <td key={p} className="py-2 text-right tabular">{u.platforms.includes(p) ? (u.likes[p] ? k(u.likes[p]!) : <span className="muted">·</span>) : ""}</td>)}
-                    <td className="py-2 text-right tabular font-medium">{k(u.totalLikes)}</td>
+                    {PLATFORMS.map((p) => <td key={p} className="py-2 text-right tabular leading-tight">{u.platforms.includes(p) ? <>{u.likes[p] ? `💗 ${k(u.likes[p]!)}` : <span className="muted">💗 ·</span>}<span className="block text-[11px] muted">{u.views[p] ? `👀 ${k(u.views[p]!)}` : "👀 ·"}</span></> : ""}</td>)}
+                    <td className="py-2 text-right tabular font-medium leading-tight">💗 {k(u.totalLikes)}<span className="block text-[11px] muted font-normal">👀 {k(u.totalViews)}</span></td>
                   </tr>
                 ))}
               </tbody>

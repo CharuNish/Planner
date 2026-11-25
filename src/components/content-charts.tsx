@@ -46,8 +46,9 @@ function TrendChart({ data, accounts, colors, unit }: { data: Row[]; accounts: A
   );
 }
 
-export function ContentTrends({ followers, likes, accounts, channels, colors }: { followers: Row[]; likes: Row[]; accounts: Account[]; channels: string[]; colors: Record<string, string> }) {
+export function ContentTrends({ followers, likes, views, accounts, channels, colors }: { followers: Row[]; likes: Row[]; views: Row[]; accounts: Account[]; channels: string[]; colors: Record<string, string> }) {
   const [channel, setChannel] = useState("All");
+  const [metric, setMetric] = useState<"likes" | "views">("likes");
   const shown = accounts.filter((a) => channel === "All" || a.channel === channel);
   return (
     <div className="space-y-5">
@@ -63,9 +64,16 @@ export function ContentTrends({ followers, likes, accounts, channels, colors }: 
           <TrendChart data={followers} accounts={shown} colors={colors} unit="followers" />
         </section>
         <section className="card p-5">
-          <h2 className="font-semibold mb-1">💗 Likes adding up</h2>
-          <p className="text-xs muted mb-3">Total likes so far, from your Uploads tab</p>
-          <TrendChart data={likes} accounts={shown} colors={colors} unit="likes" />
+          <div className="flex flex-wrap items-start justify-between gap-2 mb-3">
+            <div>
+              <h2 className="font-semibold mb-1">{metric === "likes" ? "💗 Likes adding up" : "👀 Views adding up"}</h2>
+              <p className="text-xs muted">Total {metric} so far, from your Uploads tab</p>
+            </div>
+            <div className="flex gap-1.5" role="tablist" aria-label="Likes or views">
+              {(["likes", "views"] as const).map((m) => <button key={m} role="tab" aria-selected={metric === m} onClick={() => setMetric(m)} className={`pill-btn ${metric === m ? "on" : ""}`}>{m === "likes" ? "💗 Likes" : "👀 Views"}</button>)}
+            </div>
+          </div>
+          <TrendChart data={metric === "likes" ? likes : views} accounts={shown} colors={colors} unit={metric} />
         </section>
       </div>
     </div>
