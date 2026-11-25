@@ -4,6 +4,7 @@
 // Tabs (created automatically with the right headers the first time the Content tab opens):
 //   Followers: Date | Channel | Platform | Followers                (one row per account each time you check)
 //   Uploads:   Date | Channel | Title | Type | Where | <Platform> Likes ... | <Platform> Views ... | Link | Notes
+//              (columns are matched by header, so extra columns or IG/FB/TT/YT tick boxes are fine)
 //              One row per thing you made. A reel/picture goes to every platform of that channel,
 //              a "Long video" goes to YouTube only. "Where" is optional: leave it empty for that default,
 //              or list the platforms (e.g. "Instagram, TikTok").
@@ -77,14 +78,35 @@ async function tab(name: keyof typeof TAB_HEADERS) {
   }
 }
 
-function toUpload(r: Record<string, unknown>): Upload | null {
-  const date = parseDate(r["date"]) || "";
+// Columns are found by their header name, so you can add, move or rename columns freely.
+// "IG Likes", "Instagram\nLikes", "insta likes" all work; so do tick-box columns named IG / FB / TT / YT.
+const ALIAS: Record<Platform, RegExp> = { Instagram: /\b(instagram|insta|ig)\b/, Facebook: /\b(facebook|fb)\b/, TikTok: /\b(tiktok|tik tok|tt)\b/, YouTube: /\b(youtube|yt)\b/ };
+const isTick = (v: unknown) => v === true || /^(true|yes|y|✓|✔|x)$/i.test(str(v));
+const isTickCol = (v: unknown) => typeof v === "boolean" || /^(true|false)$/i.test(str(v));
+
+export function toUpload(raw: Record<string, unknown>): Upload | null {
+  const r = Object.fromEntries(Object.entries(raw).map(([key, v]) => [key.replace(/\s+/g, " ").trim(), v]));
+  const keys = Object.keys(r);
+  const date = parseDate(r["date"] ?? r[""] ?? raw[Object.keys(raw)[0]]) || "";
   const channel = pick(CHANNELS, str(r["channel"]), "");
   if (!date || !channel) return null;
   const type = pick(UPLOAD_TYPES, str(r["type"]), "Reel");
-  const platforms = uploadPlatforms(channel, type, str(r["where"]));
+  const own = CHANNEL_PLATFORMS[channel] || [...PLATFORMS];
+  const metricKey = (p: Platform, m: "like" | "view") => keys.find((key) => key.includes(m) && ALIAS[p].test(key));
+  const metric = (p: Platform, m: "like" | "view") => { const key = metricKey(p, m); return key ? num(r[key]) : 0; };
+
+  // Where it went: tick boxes if you use them, else the "Where" column, else every platform of the channel.
+  const tickCols = PLATFORMS.map((p) => ({ p, key: keys.find((key) => !/like|view/.test(key) && ALIAS[p].test(key) && key.split(" ").length <= 2 && isTickCol(r[key])) }));
+  let platforms: Platform[];
+  if (tickCols.some((t) => t.key)) platforms = tickCols.filter((t) => t.key && isTick(r[t.key])).map((t) => t.p).filter((p) => own.includes(p));
+  else platforms = uploadPlatforms(channel, type, str(r["where"]));
+  // A number typed in a platform's column always counts, even if its box isn't ticked.
+  for (const p of own) if (!platforms.includes(p) && (metric(p, "like") || metric(p, "view"))) platforms.push(p);
+  if (!platforms.length) platforms = uploadPlatforms(channel, type, "");
+  platforms = PLATFORMS.filter((p) => platforms.includes(p));
+
   const likes: Upload["likes"] = {}, views: Upload["views"] = {};
-  for (const p of platforms) { likes[p] = num(r[`${p.toLowerCase()} likes`]); views[p] = num(r[`${p.toLowerCase()} views`]); }
+  for (const p of platforms) { likes[p] = metric(p, "like"); views[p] = metric(p, "view"); }
   return { date, channel, title: str(r["title"]) || "(untitled)", type, platforms, likes, views, totalLikes: sumOf(likes), totalViews: sumOf(views), link: str(r["link"]), notes: str(r["notes"]) };
 }
 
@@ -119,6 +141,7 @@ export function analyseContent(followers: FollowerRow[], uploads: Upload[], coll
     const mine = uploads.filter((u) => u.channel === channel && u.platforms.includes(platform)).sort((a, b) => b.date.localeCompare(a.date));
     const last = mine[0];
     const likes = mine.reduce((s, u) => s + (u.likes[platform] || 0), 0);
+    const views = mine.reduce((s, u) => s + (u.views[platform] || 0), 0);
     // Engagement: average likes on the last 10 posts, per 100 followers.
     const recent = mine.slice(0, 10).filter((u) => (u.likes[platform] || 0) > 0);
     const recentAvg = recent.length ? recent.reduce((s, u) => s + (u.likes[platform] || 0), 0) / recent.length : 0;
@@ -130,7 +153,7 @@ export function analyseContent(followers: FollowerRow[], uploads: Upload[], coll
       channel, platform, followers: latest?.followers ?? null, checked: latest?.date ?? null,
       change: latest && prev ? latest.followers - prev.followers : 0, change30: latest && monthAgo ? latest.followers - monthAgo.followers : 0,
       daysSince: last ? daysBetween(last.date, today) : null, lastTitle: last?.title ?? "",
-      posts: mine.length, likes, avgLikes: mine.length ? Math.round(likes / mine.length) : 0,
+      posts: mine.length, likes, avgLikes: mine.length ? Math.round(likes / mine.length) : 0, views, avgViews: mine.length ? Math.round(views / mine.length) : 0,
     };
   });
   // Nudge an account once a week passes without a post (only after you've started logging uploads).
@@ -149,19 +172,23 @@ export function analyseContent(followers: FollowerRow[], uploads: Upload[], coll
     return row;
   });
 
-  // Likes trend: running total of likes per account, by upload date.
+  // Likes / views trend: running total per account, by upload date.
   const uDates = [...new Set(uploads.map((u) => u.date))].sort();
-  const run: Record<string, number> = {};
-  const likesTrend = uDates.map((d) => {
-    for (const u of uploads.filter((x) => x.date === d)) for (const p of u.platforms) run[accountKey(u.channel, p)] = (run[accountKey(u.channel, p)] || 0) + (u.likes[p] || 0);
-    const row: Record<string, string | number | null> = { date: d };
-    for (const a of ACCOUNTS) row[accountKey(a.channel, a.platform)] = run[accountKey(a.channel, a.platform)] ?? null;
-    return row;
-  });
+  const runningTotal = (field: "likes" | "views") => {
+    const run: Record<string, number> = {};
+    return uDates.map((d) => {
+      for (const u of uploads.filter((x) => x.date === d)) for (const p of u.platforms) run[accountKey(u.channel, p)] = (run[accountKey(u.channel, p)] || 0) + (u[field][p] || 0);
+      const row: Record<string, string | number | null> = { date: d };
+      for (const a of ACCOUNTS) row[accountKey(a.channel, a.platform)] = run[accountKey(a.channel, a.platform)] ?? null;
+      return row;
+    });
+  };
+  const likesTrend = runningTotal("likes"), viewsTrend = runningTotal("views");
 
   const month = today.slice(0, 7), lastMonth = addDays(month + "-01", -1).slice(0, 7);
   const likesIn = (m: string) => uploads.filter((u) => u.date.slice(0, 7) === m).reduce((s, u) => s + u.totalLikes, 0);
-  const top = [...uploads].filter((u) => u.totalLikes > 0).sort((a, b) => b.totalLikes - a.totalLikes).slice(0, 5);
+  const viewsIn = (m: string) => uploads.filter((u) => u.date.slice(0, 7) === m).reduce((s, u) => s + u.totalViews, 0);
+  const top = [...uploads].filter((u) => u.totalLikes > 0 || u.totalViews > 0).sort((a, b) => b.totalLikes - a.totalLikes || b.totalViews - a.totalViews).slice(0, 5);
   const byType = UPLOAD_TYPES.map((t) => { const us = uploads.filter((u) => u.type === t && u.totalLikes > 0); return { type: t, posts: us.length, avgLikes: us.length ? Math.round(us.reduce((s, u) => s + u.totalLikes, 0) / us.length) : 0 }; }).filter((x) => x.posts);
 
   // Best day to post: average likes per platform post, by the weekday it went up.
@@ -192,9 +219,9 @@ export function analyseContent(followers: FollowerRow[], uploads: Upload[], coll
   const dueSoon = openCollabs.filter((c) => c.due && c.status !== "Posted" && daysBetween(today, c.due) <= 7).sort((a, b) => a.due.localeCompare(b.due));
 
   return {
-    accounts, nudges, totals, followerTrend, likesTrend, top, byType, byWeekday, bestDay, engaged, collabMonths,
+    accounts, nudges, totals, followerTrend, likesTrend, viewsTrend, top, byType, byWeekday, bestDay, engaged, collabMonths,
     postsThisMonth: uploads.filter((u) => u.date.slice(0, 7) === month).length,
-    likesThisMonth: likesIn(month), likesLastMonth: likesIn(lastMonth),
+    likesThisMonth: likesIn(month), likesLastMonth: likesIn(lastMonth), viewsThisMonth: viewsIn(month), viewsLastMonth: viewsIn(lastMonth),
     earned, pending, dueSoon, openCollabs,
     recent: [...uploads].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 10),
   };
