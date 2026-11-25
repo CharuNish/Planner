@@ -13,7 +13,7 @@ export function Nav() {
         <div className="max-w-7xl mx-auto px-8 flex items-center gap-6 h-14">
           <Link href="/" className="flex items-center gap-2 shrink-0">
             <span className="w-7 h-7 rounded-lg grid place-items-center text-sm" style={{ background: "linear-gradient(135deg,#8b5cf6,#22d3ee)", boxShadow: "0 0 18px rgba(139,92,246,.6)" }}>✦</span>
-            <span className="font-semibold tracking-tight" style={{ fontFamily: "var(--font-display)" }}>Charu&apos;s <span className="gradient-text">Dashboard</span></span>
+            <span className="font-semibold tracking-tight" style={{ fontFamily: "var(--font-display)" }}>C&apos;s <span className="gradient-text">Place</span></span>
           </Link>
           <nav className="flex gap-0.5 overflow-x-auto no-scrollbar">
             {TABS.map((t) => {
