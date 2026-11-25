@@ -1,4 +1,4 @@
-# My Planner 🌸
+# C's Place 🌸
 
 A private, free, daily-updated personal planner dashboard.
 

@@ -8,10 +8,10 @@ const mono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-mono" });
 const display = Fredoka({ subsets: ["latin"], variable: "--font-display", weight: ["400", "500", "600", "700"] });
 
 export const metadata: Metadata = {
-  title: "Charu's Dashboard",
-  description: "Personal daily planner dashboard",
+  title: "C's Place",
+  description: "C's personal daily planner",
   manifest: "/manifest.webmanifest",
-  appleWebApp: { capable: true, title: "Charu's Dashboard", statusBarStyle: "black-translucent" },
+  appleWebApp: { capable: true, title: "C's Place", statusBarStyle: "black-translucent" },
   icons: { icon: "/icons/icon-192.png", apple: "/icons/icon-192.png" },
 };
 
