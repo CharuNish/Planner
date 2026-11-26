@@ -92,7 +92,7 @@ export async function gatherMorningFacts(): Promise<MorningFacts> {
       income: ys.filter((t) => t.type === "Income").reduce((s, t) => s + t.amount, 0),
       budgetLeftPerDay: null,
     };
-    for (const b of upcomingBills(fin.bills, 3)) todos.push({ icon: "🧾", text: `Pay ${b.name} ${fmt(b.amount)} (${when(daysBetween(today, b.due))})` });
+    for (const b of upcomingBills(fin.bills, 3, fin.txns).filter((b) => !b.paid)) todos.push({ icon: "🧾", text: `Pay ${b.name} ${fmt(b.amount)} (${when(daysBetween(today, b.due))})` });
     if (!fin.demo) todos.push(...investmentTodos((await loadInvestments().catch(() => null))?.items ?? [])); // FD maturities this week
   }
   if (wt) {

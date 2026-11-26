@@ -34,7 +34,7 @@ export default async function Home() {
   const h = hab ? analyseHabits(hab.days) : null;
   const w = wt ? analyseWeight(wt.entries) : null;
   const f = "txns" in fin ? analyseFinance(fin.txns, fin.budgets) : null;
-  const bills = "bills" in fin ? upcomingBills(fin.bills, 7) : [];
+  const bills = "bills" in fin ? upcomingBills(fin.bills, 7, fin.txns) : [];
   const s = "tasks" in stu ? analyseStudies(stu.deadlines, stu.tasks, stu.log, stu.targets) : null;
   const todays = cal.events.filter((e) => e.date === today);
   const tomorrow = cal.events.filter((e) => e.date === addDays(today, 1));
@@ -53,7 +53,7 @@ export default async function Home() {
             <div className="mt-5 flex flex-wrap gap-2 text-xs">
               <span className="chip soft">📅 {todays.length} event{todays.length === 1 ? "" : "s"} today</span>
               {nextDeadline && <span className="chip soft">⏳ {nextDeadline.title}: {relativeDays(nextDeadline.daysLeft)}</span>}
-              {bills.length > 0 && <span className="chip soft">🧾 {bills.length} bill{bills.length === 1 ? "" : "s"} this week</span>}
+              {bills.some((b) => !b.paid) && <span className="chip soft">🧾 {bills.filter((b) => !b.paid).length} bill{bills.filter((b) => !b.paid).length === 1 ? "" : "s"} this week</span>}
             </div>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4 gap-4 justify-items-center">
@@ -116,9 +116,9 @@ export default async function Home() {
           {bills.length ? (
             <ul className="space-y-2">
               {bills.map((b) => (
-                <li key={b.key} className="flex justify-between text-sm gap-2">
-                  <span>{b.name} <span className="muted text-xs">· {relativeDays(daysBetween(today, b.due))}</span></span>
-                  <span className="tabular font-medium">{fmt(b.amount)}</span>
+                <li key={b.key} className={`flex justify-between text-sm gap-2${b.paid ? " opacity-60" : ""}`}>
+                  <span><span className={b.paid ? "line-through" : ""}>{b.name}</span> <span className="muted text-xs">· {b.paid ? "✓ paid" : relativeDays(daysBetween(today, b.due))}</span></span>
+                  <span className={`tabular font-medium${b.paid ? " line-through" : ""}`}>{fmt(b.amount)}</span>
                 </li>
               ))}
             </ul>
