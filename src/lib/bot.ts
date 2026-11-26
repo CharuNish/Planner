@@ -116,7 +116,7 @@ async function gatherToday(): Promise<Today> {
     t.spent = exp.reduce((s, x) => s + x.amount, 0);
     const top = [...exp].sort((a, b) => b.amount - a.amount)[0];
     t.topSpend = top ? `${top.category || top.description || "something"} ${fmt(top.amount)}` : null;
-    t.billsTomorrow = upcomingBills(fin.bills, 1).filter((b) => daysBetween(today, b.due) === 1).map((b) => `${b.name} ${fmt(b.amount)}`);
+    t.billsTomorrow = upcomingBills(fin.bills, 1, fin.txns).filter((b) => !b.paid && daysBetween(today, b.due) === 1).map((b) => `${b.name} ${fmt(b.amount)}`);
   }
   if (wins) t.wins = wins.items.filter((w) => w.date === today && isWin(w)).map((w) => w.text);
   return t;

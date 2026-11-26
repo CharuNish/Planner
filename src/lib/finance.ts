@@ -100,13 +100,73 @@ export function nextDueDate(bill: Bill, today = todayISO()): string | null {
   return billDueDates(bill, today, addDays(today, 3700))[0] || null;
 }
 
-/** Every bill payment due in the next `days` days. A weekly bill shows once per week, a monthly one once per month, and so on. */
-export function upcomingBills(bills: Bill[], days = 30) {
+/** Every bill payment due in the next `days` days. A weekly bill shows once per week, a monthly one once per month, and so on.
+ *  Pass your transactions too and each one says whether it's already paid (see matchBillPayments). */
+export function upcomingBills(bills: Bill[], days = 30, txns: Txn[] = []) {
   const today = todayISO();
   const end = addDays(today, days);
+  const paid = matchBillPayments(bills, txns, today, end);
   return bills
-    .flatMap((b) => billDueDates(b, today, end).map((due) => ({ ...b, due, key: `${b.name}|${due}` })))
+    .flatMap((b) => billDueDates(b, today, end).map((due) => {
+      const key = billKey(b, due);
+      return { ...b, due, key, paid: paid.has(key), paidOn: paid.get(key)?.date };
+    }))
     .sort((a, b) => a.due.localeCompare(b.due) || a.name.localeCompare(b.name));
+}
+
+export const billKey = (b: Bill, due: string) => `${b.name}|${due}`;
+
+// Words that say nothing about WHICH bill it is, so they're ignored when matching names.
+const FILLER = new Set(["bill", "bills", "payment", "payments", "pay", "paid", "monthly", "fee", "fees", "the", "for", "of", "and"]);
+const words = (s: string) => s.toLowerCase().split(/[^a-z0-9\u0d80-\u0dff]+/).filter((w) => w.length >= 2 && !FILLER.has(w));
+const sameWord = (a: string, b: string) => a === b || (Math.min(a.length, b.length) >= 4 && (a.startsWith(b) || b.startsWith(a)));
+
+/**
+ * Works out which bill due dates are already paid, by looking at the expenses in your Transactions tab.
+ *
+ * An expense pays a bill's due date when BOTH are true:
+ *  1. Its date is close to that due date: from about half a period before it (15 days for a monthly bill,
+ *     3 days for a weekly one) until just before the next due date's window starts. So paying a bit early or late still counts.
+ *  2. It looks like that bill, one of:
+ *     - its Description (or Category) has all the words of the bill's name, e.g. "Electricity CEB Home" for "Electricity (CEB) - Home"
+ *     - it's the exact same amount AND shares at least one word with the bill's name, e.g. "CEB" for LKR 5,000
+ *     - it's the exact same amount AND the same Category as the bill
+ * Each expense can pay only one bill, and the best match wins. Words like "bill" or "payment" are ignored.
+ * Returns a map of billKey -> the expense that paid it, for due dates between `from` and `to`.
+ */
+export function matchBillPayments(bills: Bill[], txns: Txn[], from: string, to: string): Map<string, Txn> {
+  const expenses = txns.filter((t) => t.type === "Expense");
+  const out = new Map<string, Txn>();
+  if (!expenses.length) return out;
+  const pairs: { key: string; txn: number; level: number; gap: number }[] = [];
+  for (const b of bills) {
+    const rule = billRule(b.frequency);
+    const half = rule.unit === "day" ? Math.max(1, Math.floor(rule.every / 2)) : rule.unit === "month" ? rule.every * 15 : 30;
+    const nameWords = words(b.name);
+    for (const due of billDueDates(b, from, to)) {
+      const next = rule.unit === "once" ? addDays(due, 90) : billDueDates(b, addDays(due, 1), addDays(due, 400 * Math.max(1, rule.every)))[0] || addDays(due, half * 4);
+      const start = addDays(due, -half), end = addDays(next, -half - 1);
+      expenses.forEach((t, i) => {
+        if (t.date < start || t.date > end) return;
+        const text = words(`${t.description} ${t.category}`);
+        const hits = nameWords.filter((w) => text.some((x) => sameWord(w, x))).length;
+        const sameAmount = Math.abs(t.amount - b.amount) < 0.5;
+        const level =
+          nameWords.length && hits === nameWords.length ? 3
+          : sameAmount && hits > 0 ? 2
+          : sameAmount && b.category && b.category.toLowerCase() === t.category.toLowerCase() ? 1 : 0;
+        if (level) pairs.push({ key: billKey(b, due), txn: i, level, gap: Math.abs(daysBetween(t.date, due)) });
+      });
+    }
+  }
+  pairs.sort((a, b) => b.level - a.level || a.gap - b.gap);
+  const used = new Set<number>();
+  for (const p of pairs) {
+    if (out.has(p.key) || used.has(p.txn)) continue;
+    out.set(p.key, expenses[p.txn]);
+    used.add(p.txn);
+  }
+  return out;
 }
 
 const sum = (xs: number[]) => xs.reduce((a, b) => a + b, 0);

@@ -1,5 +1,6 @@
 "use server";
 import { revalidatePath, revalidateTag } from "next/cache";
+import { after } from "next/server";
 import { calendarIsDemo, config, financeIsDemo, lifeIsDemo, studiesIsDemo } from "@/lib/config";
 import { addDays, parseDate, todayISO } from "@/lib/dates";
 import { blobAuth, noBlobMsg } from "@/lib/blob";
@@ -17,6 +18,10 @@ export async function addTransaction(_: Result, f: FormData): Promise<Result> {
       amount, String(f.get("description") || ""), String(f.get("method") || ""),
     ]);
   } catch (e) { return { error: String(e) }; }
+  // Paid a bill? Take that day off your Google Calendar straight away (doesn't slow down saving).
+  if (String(f.get("type") || "Expense") === "Expense" && !calendarIsDemo()) {
+    after(async () => { const { syncBillsToCalendar } = await import("@/lib/billsync"); await syncBillsToCalendar().catch(() => null); });
+  }
   revalidatePath("/", "layout");
   return { ok: "Saved to your sheet ✓" };
 }

@@ -20,7 +20,8 @@ export default async function FinancePage() {
     return <div><PageHeader title="💰 Finance" /><div className="card p-5 text-bad text-sm">Couldn&apos;t read your finance sheet: {String(e).slice(0, 300)}</div></div>;
   }
   const a = analyseFinance(data.txns, data.budgets);
-  const bills = upcomingBills(data.bills, 30);
+  const bills = upcomingBills(data.bills, 30, data.txns);
+  const unpaid = bills.filter((b) => !b.paid);
   // After the page is sent, quietly make sure every bill is in your Google Calendar (cheap when nothing changed).
   if (!data.demo && !calendarIsDemo()) after(() => syncBillsToCalendar().catch(() => null));
   const today = todayISO();
@@ -98,12 +99,13 @@ export default async function FinancePage() {
           {bills.length ? (
             <ul className="space-y-2">
               {bills.map((b) => (
-                <li key={b.key} className="flex justify-between text-sm gap-2">
-                  <span>{b.name} <span className="chip soft ml-1">{b.type}</span></span>
-                  <span className="text-right"><span className="tabular font-medium">{fmt(b.amount)}</span><span className="block text-xs muted">{prettyDate(b.due)} · {relativeDays(daysBetween(today, b.due))}</span></span>
+                <li key={b.key} className={`flex justify-between text-sm gap-2${b.paid ? " opacity-60" : ""}`} title={b.paid ? `Paid ${b.paidOn ? prettyDate(b.paidOn) : ""} (found in your expenses)` : undefined}>
+                  <span><span className={b.paid ? "line-through" : ""}>{b.name}</span> <span className="chip soft ml-1">{b.paid ? "✓ Paid" : b.type}</span></span>
+                  <span className="text-right"><span className={`tabular font-medium${b.paid ? " line-through" : ""}`}>{fmt(b.amount)}</span><span className="block text-xs muted">{prettyDate(b.due)} · {b.paid ? `paid${b.paidOn ? " " + prettyDate(b.paidOn) : ""}` : relativeDays(daysBetween(today, b.due))}</span></span>
                 </li>
               ))}
-              <li className="flex justify-between text-sm pt-2 border-t font-semibold" style={{ borderColor: "var(--border)" }}><span>Total</span><span className="tabular">{fmt(bills.reduce((x, b) => x + b.amount, 0))}</span></li>
+              <li className="flex justify-between text-sm pt-2 border-t font-semibold" style={{ borderColor: "var(--border)" }}><span>{unpaid.length < bills.length ? "Still to pay" : "Total"}</span><span className="tabular">{fmt(unpaid.reduce((x, b) => x + b.amount, 0))}</span></li>
+              {unpaid.length < bills.length && <li className="flex justify-between text-xs muted"><span>Already paid</span><span className="tabular">{fmt(bills.reduce((x, b) => x + (b.paid ? b.amount : 0), 0))}</span></li>}
             </ul>
           ) : <Empty>No bills in the next 30 days. Add them to the Bills tab of your sheet.</Empty>}
         </Section>

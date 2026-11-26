@@ -280,6 +280,10 @@ Every bill in the **Bills** tab is added to your Google Calendar as an all-day, 
 - **When it happens:** every morning at 6:00 AM, and a few seconds after you open the Finance page. To do it right away, click **📅 Add to my calendar now** on the Finance page, next to "Bills & subscriptions".
 - **Change a bill:** edit the row in the sheet (amount, date, frequency). The calendar event updates by itself. Don't edit the bill in Google Calendar, because the sheet wins.
 - **Bill that ends (e.g. a 12-month plan):** put the last date in the **End Date** column (G). The bill stops showing after that date and the calendar event stops repeating then. Leave it blank to keep it going forever.
+- **Paid it? Just record the expense.** Add the payment as an **Expense** in Transactions (on the website or in the sheet). The planner then crosses out that bill's name and amount on the Finance and Home pages (✓ Paid) and takes **that one day** off your Google Calendar. Next month's repeat stays. An expense counts as paying a bill when:
+  - its date is near the due date (from about 15 days before a monthly bill is due, until about 15 days before the next one), **and**
+  - its Description has the bill's name in it (e.g. `Electricity CEB Home` for "Electricity (CEB) - Home"), **or** it's the exact same amount and has one word of the name (e.g. `CEB`, LKR 5,000), **or** it's the exact same amount in the same Category.
+  - Tip: the easiest way is to type the bill's name as the Description. Delete the expense and the bill comes back.
 - **Stop a bill:** delete its row in the sheet, or set its End Date. Its calendar event is removed too. Only events the planner made are ever removed.
 - **Your sheet is never changed.** The planner only reads it.
 - **If you see "no access (403)":** the robot can only read your calendar. Open [Google Calendar](https://calendar.google.com) → ⚙️ **Settings** → click your calendar on the left → **Shared with** → next to the robot's email pick **Make changes to events**.
